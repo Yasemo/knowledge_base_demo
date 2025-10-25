@@ -69,6 +69,20 @@ export async function runPendingMigrations() {
       up: migration003.up,
       down: migration003.down,
     });
+    
+    const migration004 = await import('./migrations/004_add_renderer_demo_cards.ts');
+    migrations.push({
+      name: '004_add_renderer_demo_cards',
+      up: migration004.up,
+      down: migration004.down,
+    });
+    
+    const migration005 = await import('./migrations/005_add_iframe_demo_cards.ts');
+    migrations.push({
+      name: '005_add_iframe_demo_cards',
+      up: migration005.up,
+      down: migration005.down,
+    });
   } catch (error) {
     console.log('  ℹ️  Error loading migrations:', error);
   }
