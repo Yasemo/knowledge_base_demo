@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --allow-env --watch server.ts",
+    "start": "deno run --allow-net --allow-read --allow-env server.ts"
+  },
+  "imports": {
+    "@neon/serverless": "jsr:@neon/serverless@^0.10.3"
+  }
+}
