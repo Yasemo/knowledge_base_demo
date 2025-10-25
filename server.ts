@@ -24,12 +24,20 @@ async function initializeDatabase() {
   // Import database modules after env is loaded
   const { testConnection } = await import("./db/client.ts");
   const { runMigrations, seedData } = await import("./db/migrations.ts");
+  const { runPendingMigrations } = await import("./db/migrationRunner.ts");
   
   const connected = await testConnection();
   if (!connected) {
     throw new Error("Failed to connect to database");
   }
+  
+  // Run base migrations (create tables)
   await runMigrations();
+  
+  // Run additional migrations (alter tables, add columns, etc.)
+  await runPendingMigrations();
+  
+  // Seed initial data
   await seedData();
 }
 
@@ -253,6 +261,71 @@ async function handleRequest(req: Request): Promise<Response> {
       if (pathname.match(/^\/api\/tags\/[^/]+$/) && req.method === "DELETE") {
         const id = pathname.split("/").pop()!;
         await queries.deleteTag(id);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // ========== VIEWS ==========
+      if (pathname === "/api/views" && req.method === "GET") {
+        const views = await queries.getAllViews();
+        return new Response(JSON.stringify(views), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname === "/api/views" && req.method === "POST") {
+        const body = await parseJsonBody(req);
+        if (!body || !body.name) {
+          return new Response(
+            JSON.stringify({ error: "Missing required fields" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const view = await queries.createView(body);
+        return new Response(JSON.stringify(view), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/views\/[^/]+$/) && req.method === "GET") {
+        const id = pathname.split("/").pop()!;
+        const view = await queries.getViewById(id);
+        if (!view) {
+          return new Response(JSON.stringify({ error: "View not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify(view), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/views\/[^/]+$/) && req.method === "PUT") {
+        const id = pathname.split("/").pop()!;
+        const body = await parseJsonBody(req);
+        if (!body) {
+          return new Response(
+            JSON.stringify({ error: "Invalid request body" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const view = await queries.updateView(id, body);
+        if (!view) {
+          return new Response(JSON.stringify({ error: "View not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify(view), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/views\/[^/]+$/) && req.method === "DELETE") {
+        const id = pathname.split("/").pop()!;
+        await queries.deleteView(id);
         return new Response(JSON.stringify({ success: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

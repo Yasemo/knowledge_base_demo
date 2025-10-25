@@ -62,10 +62,27 @@ export async function runMigrations() {
     `;
     console.log("✅ Card-tags junction table created");
 
+    // Create views table
+    await sql`
+      CREATE TABLE IF NOT EXISTS views (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        description TEXT,
+        user_id UUID NOT NULL,
+        schema_id UUID REFERENCES schemas(id) ON DELETE SET NULL,
+        tag_ids UUID[],
+        field_filters JSONB DEFAULT '[]'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    console.log("✅ Views table created");
+
     // Create indexes for performance
     await sql`CREATE INDEX IF NOT EXISTS idx_cards_schema_id ON content_cards(schema_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_card_tags_card_id ON card_tags(card_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_card_tags_tag_id ON card_tags(tag_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_views_user_id ON views(user_id)`;
     console.log("✅ Indexes created");
 
     console.log("✅ All migrations completed successfully");

@@ -1,15 +1,20 @@
-import { schemasAPI, cardsAPI, tagsAPI, showError } from './utils.js';
+import { schemasAPI, cardsAPI, tagsAPI, viewsAPI, showError, matchesFieldFilter, showExportModal } from './utils.js';
 import { initSchemaBuilder, openSchemaModal } from './schema-builder.js';
 import { initCardCreator, openCardCreatorModal } from './card-creator.js';
 import { initCardViewer, renderCards, showCardDetail } from './card-viewer.js';
 import { initTagManager, renderTagFilters, openTagModal } from './tag-manager.js';
+import { initViewManager, renderViews, openViewModal } from './view-manager.js';
+import { initActiveContext, openActiveContextModal } from './active-context.js';
 
 // Application State
 const state = {
   schemas: [],
   cards: [],
   tags: [],
+  views: [],
   selectedTags: [],
+  selectedSchema: null, // Filter by schema
+  activeView: null, // Active saved view
   currentView: 'grid', // grid, list, table
 };
 
@@ -24,6 +29,8 @@ async function init() {
     initCardCreator();
     initCardViewer();
     initTagManager();
+    initViewManager();
+    initActiveContext();
     
     // Set up event listeners
     setupEventListeners();
@@ -41,10 +48,11 @@ async function init() {
 // Load data from API
 async function loadData() {
   try {
-    [state.schemas, state.cards, state.tags] = await Promise.all([
+    [state.schemas, state.cards, state.tags, state.views] = await Promise.all([
       schemasAPI.getAll(),
       cardsAPI.getAll(),
       tagsAPI.getAll(),
+      viewsAPI.getAll(),
     ]);
   } catch (error) {
     console.error('Failed to load data:', error);
@@ -55,7 +63,28 @@ async function loadData() {
 // Reload cards with current filters
 async function reloadCards() {
   try {
-    state.cards = await cardsAPI.getAll(state.selectedTags);
+    let cards = await cardsAPI.getAll(state.selectedTags);
+    
+    // Filter by schema if one is selected
+    if (state.selectedSchema) {
+      cards = cards.filter(card => card.schema_id === state.selectedSchema);
+    }
+    
+    // Apply field filters from active view
+    if (state.activeView) {
+      const view = state.views.find(v => v.id === state.activeView);
+      if (view && view.field_filters && view.field_filters.length > 0) {
+        cards = cards.filter(card => {
+          // Card must match ALL field filters (AND logic)
+          return view.field_filters.every(filter => {
+            const cardValue = card.data[filter.field_name];
+            return matchesFieldFilter(cardValue, filter.operator, filter.value);
+          });
+        });
+      }
+    }
+    
+    state.cards = cards;
     renderCards(state.cards, state.currentView);
     updateResultsCount();
   } catch (error) {
@@ -64,13 +93,32 @@ async function reloadCards() {
   }
 }
 
+// Apply view filters
+async function applyView(viewId) {
+  if (!viewId) {
+    // "All Cards" view - clear all filters
+    state.activeView = null;
+    state.selectedSchema = null;
+    state.selectedTags = [];
+  } else {
+    // Find and apply the view
+    const view = state.views.find(v => v.id === viewId);
+    if (view) {
+      state.activeView = viewId;
+      state.selectedSchema = view.schema_id || null;
+      state.selectedTags = view.tag_ids || [];
+    }
+  }
+  
+  // Reload cards with new filters
+  await reloadCards();
+  
+  // Update UI
+  render();
+}
+
 // Set up event listeners
 function setupEventListeners() {
-  // Menu button (toggle sidebar on mobile)
-  document.getElementById('menuBtn').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('hidden');
-  });
-  
   // New schema button
   document.getElementById('newSchemaBtn').addEventListener('click', () => {
     openSchemaModal(null, async () => {
@@ -98,12 +146,27 @@ function setupEventListeners() {
     });
   });
   
+  // New view button
+  document.getElementById('newViewBtn').addEventListener('click', () => {
+    openViewModal(null, state.schemas, state.tags, async () => {
+      state.views = await viewsAPI.getAll();
+      render();
+    }, state.cards);
+  });
+  
+  // Active Context button
+  document.getElementById('activeContextBtn').addEventListener('click', async () => {
+    // Get all cards (without current filters)
+    const allCards = await cardsAPI.getAll();
+    openActiveContextModal(state.tags, state.views, allCards);
+  });
+  
   // Clear filters button
   document.getElementById('clearFiltersBtn').addEventListener('click', () => {
     state.selectedTags = [];
+    state.activeView = null;
     reloadCards();
-    renderTagFilters(state.tags, state.selectedTags, handleTagFilter);
-    document.getElementById('clearFiltersBtn').style.display = 'none';
+    render();
   });
   
   // View toggle buttons
@@ -112,6 +175,37 @@ function setupEventListeners() {
       const view = e.target.dataset.view;
       setView(view);
     });
+  });
+  
+  // Export table button
+  document.getElementById('exportTableBtn').addEventListener('click', () => {
+    if (state.cards.length === 0) {
+      showError('No cards to export');
+      return;
+    }
+    
+    // Generate filename based on active filters
+    let filename = 'knowledge-base';
+    
+    if (state.activeView) {
+      const view = state.views.find(v => v.id === state.activeView);
+      if (view) {
+        filename = view.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      }
+    } else if (state.selectedSchema) {
+      const schema = state.schemas.find(s => s.id === state.selectedSchema);
+      if (schema) {
+        filename = schema.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '-cards';
+      }
+    } else if (state.selectedTags.length > 0) {
+      const tagNames = state.selectedTags
+        .map(tagId => state.tags.find(t => t.id === tagId)?.name)
+        .filter(Boolean)
+        .join('-');
+      filename = tagNames.replace(/[^a-z0-9]/gi, '-').toLowerCase() + '-cards';
+    }
+    
+    showExportModal(state.cards, filename);
   });
 }
 
@@ -127,13 +221,12 @@ function handleTagFilter(tagId) {
     state.selectedTags.push(tagId);
   }
   
+  // Clear active view when manually changing filters
+  state.activeView = null;
+  
   // Update UI
   reloadCards();
-  renderTagFilters(state.tags, state.selectedTags, handleTagFilter);
-  
-  // Show/hide clear filters button
-  document.getElementById('clearFiltersBtn').style.display = 
-    state.selectedTags.length > 0 ? 'block' : 'none';
+  render();
 }
 
 // Set view mode
@@ -145,7 +238,11 @@ function setView(view) {
     btn.classList.toggle('active', btn.dataset.view === view);
   });
   
-  // Re-render cards
+  // Show export button only in table view
+  const exportBtn = document.getElementById('exportTableBtn');
+  exportBtn.style.display = view === 'table' ? 'block' : 'none';
+  
+  // Re-render cards with new view
   renderCards(state.cards, state.currentView);
 }
 
@@ -156,27 +253,30 @@ function updateResultsCount() {
   document.getElementById('resultsCount').textContent = text;
 }
 
-// Render schemas list in sidebar
+// Render schemas as horizontal chips in toolbar
 function renderSchemasList() {
   const container = document.getElementById('schemasList');
   
   if (state.schemas.length === 0) {
-    container.innerHTML = '<p style="font-size: 12px; color: var(--nyt-gray);">No schemas yet</p>';
+    container.innerHTML = '<span style="font-size: 12px; color: var(--nyt-gray);">No schemas yet</span>';
     return;
   }
   
-  container.innerHTML = state.schemas.map(schema => `
-    <div class="schema-item" data-schema-id="${schema.id}">
-      <span class="schema-name">${schema.name}</span>
-      <div class="schema-actions">
-        <button class="schema-action-btn" data-action="edit" data-schema-id="${schema.id}" title="Edit">✎</button>
-        <button class="schema-action-btn" data-action="delete" data-schema-id="${schema.id}" title="Delete">✕</button>
+  container.innerHTML = state.schemas.map(schema => {
+    const isActive = state.selectedSchema === schema.id;
+    return `
+      <div class="schema-chip ${isActive ? 'active' : ''}" data-schema-id="${schema.id}">
+        <span>${schema.name}</span>
+        <div class="schema-chip-actions">
+          <button class="schema-chip-btn" data-action="edit" data-schema-id="${schema.id}" title="Edit">✎</button>
+          <button class="schema-chip-btn" data-action="delete" data-schema-id="${schema.id}" title="Delete">✕</button>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   
-  // Add event listeners
-  container.querySelectorAll('.schema-action-btn').forEach(btn => {
+  // Add event listeners for action buttons
+  container.querySelectorAll('.schema-chip-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const action = btn.dataset.action;
@@ -201,14 +301,42 @@ function renderSchemasList() {
       }
     });
   });
+  
+  // Add event listeners for schema chip filtering
+  container.querySelectorAll('.schema-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      // Don't trigger if clicking action buttons
+      if (e.target.closest('.schema-chip-btn')) return;
+      
+      const schemaId = chip.dataset.schemaId;
+      
+      // Clear active view when manually changing filters
+      state.activeView = null;
+      
+      // Toggle schema filter
+      if (state.selectedSchema === schemaId) {
+        state.selectedSchema = null;
+      } else {
+        state.selectedSchema = schemaId;
+      }
+      
+      reloadCards();
+      render();
+    });
+  });
 }
 
 // Main render function
 function render() {
+  renderViews(state.views, state.schemas, state.tags, state.activeView, applyView, state.cards);
   renderSchemasList();
   renderTagFilters(state.tags, state.selectedTags, handleTagFilter);
   renderCards(state.cards, state.currentView);
   updateResultsCount();
+  
+  // Show/hide clear filters button
+  const hasFilters = state.selectedTags.length > 0 || state.selectedSchema || state.activeView;
+  document.getElementById('clearFiltersBtn').style.display = hasFilters ? 'block' : 'none';
 }
 
 // Export state and functions for other modules

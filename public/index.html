@@ -12,56 +12,59 @@
   <header class="nyt-header">
     <div class="header-bar"></div>
     <nav class="header-nav">
-      <div class="nav-left">
-        <button id="menuBtn" class="icon-btn" title="Menu">☰</button>
-      </div>
       <h1 class="site-title">Knowledge Base</h1>
-      <div class="nav-right">
+      <div class="nav-actions">
         <button id="newSchemaBtn" class="text-btn">+ Schema</button>
         <button id="newCardBtn" class="text-btn primary">+ Card</button>
+        <button id="newTagBtn" class="text-btn">+ Tag</button>
+        <button id="activeContextBtn" class="text-btn">🎯 Active Context</button>
       </div>
     </nav>
   </header>
 
-  <!-- Main Layout -->
-  <div class="main-container">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-section">
-        <h2 class="sidebar-title">Schemas</h2>
-        <div id="schemasList" class="schemas-list"></div>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-container">
+      <!-- Views -->
+      <div class="toolbar-section">
+        <label class="toolbar-label">Views:</label>
+        <div id="viewsList" class="views-chips"></div>
+        <button id="newViewBtn" class="text-btn small">+ View</button>
       </div>
 
-      <div class="sidebar-section">
-        <h2 class="sidebar-title">Filter by Tags</h2>
-        <div id="tagFilterList" class="tag-filter-list"></div>
-        <button id="clearFiltersBtn" class="text-btn small" style="margin-top: 12px; display: none;">Clear Filters</button>
+      <!-- Schemas Filter -->
+      <div class="toolbar-section">
+        <label class="toolbar-label">Schemas:</label>
+        <div id="schemasList" class="schemas-chips"></div>
       </div>
 
-      <div class="sidebar-section">
-        <h2 class="sidebar-title">Manage Tags</h2>
-        <button id="newTagBtn" class="text-btn small">+ New Tag</button>
+      <!-- Tags Filter -->
+      <div class="toolbar-section">
+        <label class="toolbar-label">Tags:</label>
+        <div id="tagFilterList" class="tag-filter-chips"></div>
+        <button id="clearFiltersBtn" class="text-btn small" style="display: none;">Clear</button>
       </div>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
       <!-- View Controls -->
-      <div class="view-controls">
+      <div class="toolbar-section toolbar-right">
         <div class="view-toggle">
           <button class="view-btn active" data-view="grid">Grid</button>
           <button class="view-btn" data-view="list">List</button>
           <button class="view-btn" data-view="table">Table</button>
+          <button class="view-btn" data-view="carousel">Carousel</button>
         </div>
+        <button id="exportTableBtn" class="text-btn small" style="display: none;">⬇️ Export Table</button>
         <div class="results-count">
           <span id="resultsCount">0 cards</span>
         </div>
       </div>
-
-      <!-- Cards Container -->
-      <div id="cardsContainer" class="cards-grid"></div>
-    </main>
+    </div>
   </div>
+
+  <!-- Main Content (Full Width) -->
+  <main class="main-content-fullwidth">
+    <div id="cardsContainer" class="cards-grid"></div>
+  </main>
 
   <!-- Modal Container -->
   <div id="modalContainer"></div>

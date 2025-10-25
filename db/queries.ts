@@ -258,3 +258,68 @@ export async function deleteTag(id: string) {
   await sql`DELETE FROM tags WHERE id = ${id}`;
   return true;
 }
+
+// ========== VIEWS ==========
+
+export async function getAllViews() {
+  return await sql`
+    SELECT * FROM views
+    ORDER BY created_at DESC
+  `;
+}
+
+export async function getViewById(id: string) {
+  const result = await sql`
+    SELECT * FROM views
+    WHERE id = ${id}
+  `;
+  return result[0] || null;
+}
+
+export async function createView(data: {
+  name: string;
+  description?: string;
+  schema_id?: string;
+  tag_ids?: string[];
+  field_filters?: any[];
+}) {
+  const result = await sql`
+    INSERT INTO views (name, description, user_id, schema_id, tag_ids, field_filters)
+    VALUES (
+      ${data.name},
+      ${data.description || null},
+      gen_random_uuid(),
+      ${data.schema_id || null},
+      ${data.tag_ids || []},
+      ${JSON.stringify(data.field_filters || [])}
+    )
+    RETURNING *
+  `;
+  return result[0];
+}
+
+export async function updateView(id: string, data: {
+  name?: string;
+  description?: string;
+  schema_id?: string;
+  tag_ids?: string[];
+  field_filters?: any[];
+}) {
+  const result = await sql`
+    UPDATE views
+    SET name = ${data.name !== undefined ? data.name : sql`name`},
+        description = ${data.description !== undefined ? data.description : sql`description`},
+        schema_id = ${data.schema_id !== undefined ? data.schema_id : sql`schema_id`},
+        tag_ids = ${data.tag_ids !== undefined ? data.tag_ids : sql`tag_ids`},
+        field_filters = ${data.field_filters !== undefined ? JSON.stringify(data.field_filters) : sql`field_filters`},
+        updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] || null;
+}
+
+export async function deleteView(id: string) {
+  await sql`DELETE FROM views WHERE id = ${id}`;
+  return true;
+}

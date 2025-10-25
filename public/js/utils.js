@@ -54,6 +54,15 @@ export const tagsAPI = {
   delete: (id) => fetchAPI(`/tags/${id}`, { method: 'DELETE' }),
 };
 
+// Views API
+export const viewsAPI = {
+  getAll: () => fetchAPI('/views'),
+  getById: (id) => fetchAPI(`/views/${id}`),
+  create: (data) => fetchAPI('/views', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => fetchAPI(`/views/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => fetchAPI(`/views/${id}`, { method: 'DELETE' }),
+};
+
 // Format date for display
 export function formatDate(dateString) {
   const date = new Date(dateString);
@@ -98,6 +107,166 @@ export function extractExcerpt(content, maxLength = 150) {
   }
   
   return text;
+}
+
+// Estimate token count using word-based method
+// Formula: 1 token ≈ 0.75 words (or ~4 characters)
+// Provides ~5-15% accuracy without external dependencies
+export function estimateTokenCount(text) {
+  if (!text || typeof text !== 'string') return 0;
+  
+  // Count words by splitting on whitespace
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+  const wordCount = words.length;
+  
+  // Convert words to estimated tokens: tokens = words / 0.75
+  const estimatedTokens = Math.ceil(wordCount / 0.75);
+  
+  return estimatedTokens;
+}
+
+// Escape value for CSV format
+export function escapeCSV(value) {
+  if (value === null || value === undefined) return '';
+  
+  const str = String(value);
+  
+  // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  
+  return str;
+}
+
+// Export cards to CSV file
+export function exportCardsToCSV(cards, filename, includeContent = false) {
+  if (!cards || cards.length === 0) {
+    showError('No cards to export');
+    return;
+  }
+  
+  // Get all unique field names from all cards
+  const allFields = new Set();
+  cards.forEach(card => {
+    Object.keys(card.data || {}).forEach(key => {
+      // Skip title/name as we'll handle separately
+      if (key !== 'title' && key !== 'name') {
+        allFields.add(key);
+      }
+    });
+  });
+  
+  const fieldArray = Array.from(allFields).sort();
+  
+  // Build CSV header
+  const headers = [
+    'Schema',
+    'Title',
+    'Created Date',
+    'Updated Date',
+    'Token Count',
+    'Tags',
+    ...fieldArray
+  ];
+  
+  if (includeContent) {
+    headers.push('Content');
+  }
+  
+  // Build CSV rows
+  const rows = cards.map(card => {
+    const title = card.data?.title || card.data?.name || 'Untitled';
+    const tags = card.tags ? card.tags.map(t => t.name).join('; ') : '';
+    const tokenCount = estimateTokenCount(card.content || '');
+    
+    const row = [
+      escapeCSV(card.schema_name),
+      escapeCSV(title),
+      escapeCSV(formatDate(card.created_at)),
+      escapeCSV(formatDate(card.updated_at || card.created_at)),
+      escapeCSV(tokenCount),
+      escapeCSV(tags)
+    ];
+    
+    // Add dynamic fields
+    fieldArray.forEach(field => {
+      const value = card.data?.[field];
+      if (Array.isArray(value)) {
+        row.push(escapeCSV(value.join('; ')));
+      } else {
+        row.push(escapeCSV(value));
+      }
+    });
+    
+    // Add content if requested
+    if (includeContent) {
+      row.push(escapeCSV(card.content || ''));
+    }
+    
+    return row;
+  });
+  
+  // Combine header and rows
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n');
+  
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  showSuccess(`Exported ${cards.length} cards to ${filename}`);
+}
+
+// Show export options modal
+export function showExportModal(cards, baseFilename, onExport) {
+  const content = `
+    <div style="padding: 16px;">
+      <p style="font-family: var(--font-sans); font-size: 14px; margin-bottom: 16px;">
+        Exporting <strong>${cards.length}</strong> card${cards.length === 1 ? '' : 's'}
+      </p>
+      
+      <label style="display: flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 14px; cursor: pointer;">
+        <input type="checkbox" id="includeContentCheckbox" style="cursor: pointer;">
+        Include full content field (may create large file)
+      </label>
+    </div>
+  `;
+  
+  const footer = `
+    <button type="button" class="text-btn secondary" id="cancelExportBtn">Cancel</button>
+    <button type="button" class="text-btn primary" id="confirmExportBtn">Export CSV</button>
+  `;
+  
+  const modal = createModal(content, 'Export to CSV', footer);
+  
+  // Event listeners
+  document.getElementById('cancelExportBtn').addEventListener('click', () => {
+    closeModal(modal);
+  });
+  
+  document.getElementById('confirmExportBtn').addEventListener('click', () => {
+    const includeContent = document.getElementById('includeContentCheckbox').checked;
+    closeModal(modal);
+    
+    // Generate filename with date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `${baseFilename}-${date}.csv`;
+    
+    exportCardsToCSV(cards, filename, includeContent);
+    
+    if (onExport) onExport();
+  });
 }
 
 // Create modal overlay
@@ -182,3 +351,70 @@ export const FIELD_TYPES = [
   { value: 'url', label: 'URL' },
   { value: 'email', label: 'Email' },
 ];
+
+// Collect all unique fields from schemas
+export function collectAllFields(schemas) {
+  const fieldsMap = new Map();
+  
+  schemas.forEach(schema => {
+    const fields = schema.field_definitions?.fields || [];
+    fields.forEach(field => {
+      // Skip markdown/content fields as they're not good for filtering
+      if (field.type === 'markdown' || field.is_primary_content) {
+        return;
+      }
+      
+      const key = field.name;
+      if (!fieldsMap.has(key)) {
+        fieldsMap.set(key, {
+          name: field.name,
+          label: field.label,
+          type: field.type,
+          options: field.options || null,
+          schemas: [schema.name]
+        });
+      } else {
+        // Field exists in multiple schemas
+        const existing = fieldsMap.get(key);
+        if (!existing.schemas.includes(schema.name)) {
+          existing.schemas.push(schema.name);
+        }
+        // Merge options if it's a select field
+        if (field.options && existing.options) {
+          const existingValues = new Set(existing.options.map(o => o.value));
+          field.options.forEach(opt => {
+            if (!existingValues.has(opt.value)) {
+              existing.options.push(opt);
+            }
+          });
+        }
+      }
+    });
+  });
+  
+  return Array.from(fieldsMap.values());
+}
+
+// Match field filter
+export function matchesFieldFilter(cardValue, operator, filterValue) {
+  if (cardValue === undefined || cardValue === null) {
+    return operator === 'is_empty';
+  }
+  
+  switch (operator) {
+    case 'equals':
+      return String(cardValue).toLowerCase() === String(filterValue).toLowerCase();
+    case 'not_equals':
+      return String(cardValue).toLowerCase() !== String(filterValue).toLowerCase();
+    case 'contains':
+      return String(cardValue).toLowerCase().includes(String(filterValue).toLowerCase());
+    case 'not_contains':
+      return !String(cardValue).toLowerCase().includes(String(filterValue).toLowerCase());
+    case 'is_empty':
+      return !cardValue || cardValue === '';
+    case 'is_not_empty':
+      return cardValue && cardValue !== '';
+    default:
+      return false;
+  }
+}

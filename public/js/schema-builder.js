@@ -76,6 +76,9 @@ function addFieldToList(fieldData = null) {
   fieldDiv.className = 'field-item';
   fieldDiv.dataset.fieldId = fieldId;
   
+  const currentType = fieldData ? fieldData.type : 'text';
+  const needsOptions = currentType === 'select' || currentType === 'multi_select';
+  
   fieldDiv.innerHTML = `
     <div class="field-item-header">
       <input 
@@ -123,7 +126,7 @@ function addFieldToList(fieldData = null) {
       />
     </div>
     
-    <div>
+    <div style="margin-bottom: 8px;">
       <label style="font-size: 12px;">
         <input 
           type="checkbox" 
@@ -134,13 +137,82 @@ function addFieldToList(fieldData = null) {
         Required field
       </label>
     </div>
+    
+    <div class="field-options-container" style="display: ${needsOptions ? 'block' : 'none'}; background: #f9f9f9; padding: 12px; border: 1px solid var(--nyt-border); margin-top: 8px;">
+      <label class="form-label" style="font-size: 11px; margin-bottom: 8px;">Options</label>
+      <div class="options-list" data-field="options"></div>
+      <button type="button" class="text-btn small" data-action="add-option" style="margin-top: 8px;">+ Add Option</button>
+    </div>
   `;
   
   fieldsList.appendChild(fieldDiv);
   
+  // Load existing options if editing
+  if (fieldData && fieldData.options && Array.isArray(fieldData.options)) {
+    const optionsList = fieldDiv.querySelector('.options-list');
+    fieldData.options.forEach(option => {
+      addOptionToField(optionsList, option);
+    });
+  }
+  
+  // Type change handler - show/hide options
+  const typeSelect = fieldDiv.querySelector('[data-field="type"]');
+  typeSelect.addEventListener('change', () => {
+    const selectedType = typeSelect.value;
+    const optionsContainer = fieldDiv.querySelector('.field-options-container');
+    const needsOptions = selectedType === 'select' || selectedType === 'multi_select';
+    optionsContainer.style.display = needsOptions ? 'block' : 'none';
+  });
+  
   // Remove button handler
   fieldDiv.querySelector('[data-action="remove"]').addEventListener('click', () => {
     fieldDiv.remove();
+  });
+  
+  // Add option button handler
+  fieldDiv.querySelector('[data-action="add-option"]').addEventListener('click', () => {
+    const optionsList = fieldDiv.querySelector('.options-list');
+    addOptionToField(optionsList);
+  });
+}
+
+function addOptionToField(optionsList, optionData = null) {
+  const optionDiv = document.createElement('div');
+  optionDiv.className = 'option-item';
+  optionDiv.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 80px 60px; gap: 6px; margin-bottom: 6px; align-items: center;';
+  
+  optionDiv.innerHTML = `
+    <input 
+      type="text" 
+      class="form-input" 
+      placeholder="Value (e.g., high)"
+      value="${optionData ? optionData.value : ''}"
+      data-option="value"
+      style="font-size: 13px; padding: 6px;"
+    />
+    <input 
+      type="text" 
+      class="form-input" 
+      placeholder="Label (e.g., High)"
+      value="${optionData ? optionData.label : ''}"
+      data-option="label"
+      style="font-size: 13px; padding: 6px;"
+    />
+    <input 
+      type="color" 
+      class="form-input" 
+      value="${optionData ? optionData.color : '#2196f3'}"
+      data-option="color"
+      style="font-size: 13px; padding: 2px; height: 32px;"
+    />
+    <button type="button" class="text-btn small secondary" data-action="remove-option" style="padding: 4px 8px;">×</button>
+  `;
+  
+  optionsList.appendChild(optionDiv);
+  
+  // Remove option handler
+  optionDiv.querySelector('[data-action="remove-option"]').addEventListener('click', () => {
+    optionDiv.remove();
   });
 }
 
@@ -180,6 +252,28 @@ async function saveSchema(existingSchema, onSuccess) {
       // Add special property for markdown fields
       if (field.type === 'markdown') {
         field.is_primary_content = true;
+      }
+      
+      // Collect options for select and multi_select fields
+      if (field.type === 'select' || field.type === 'multi_select') {
+        const optionItems = item.querySelectorAll('.option-item');
+        const options = [];
+        
+        optionItems.forEach(optionItem => {
+          const value = optionItem.querySelector('[data-option="value"]').value.trim();
+          const label = optionItem.querySelector('[data-option="label"]').value.trim();
+          const color = optionItem.querySelector('[data-option="color"]').value;
+          
+          if (value && label) {
+            options.push({ value, label, color });
+          }
+        });
+        
+        if (options.length === 0) {
+          throw new Error(`Field "${field.name}" is a ${field.type} type and requires at least one option`);
+        }
+        
+        field.options = options;
       }
       
       fields.push(field);
