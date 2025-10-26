@@ -303,6 +303,12 @@ async function saveCard(schemas, existingCard, onSuccess) {
     closeModal(currentModal);
     if (onSuccess) onSuccess();
   } catch (error) {
-    showError(error.message);
+    // Check for duplicate title error
+    if (error.message.includes('duplicate key') || error.message.includes('idx_content_cards_title_lower')) {
+      const titleValue = data.title || 'this title';
+      showError(`A card with the title "${titleValue}" already exists. Please use a different title.`);
+    } else {
+      showError(error.message);
+    }
   }
 }

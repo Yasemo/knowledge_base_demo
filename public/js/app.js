@@ -5,6 +5,7 @@ import { initCardViewer, renderCards, showCardDetail } from './card-viewer.js';
 import { initTagManager, renderTagFilters, openTagModal } from './tag-manager.js';
 import { initViewManager, renderViews, openViewModal } from './view-manager.js';
 import { initActiveContext, openActiveContextModal } from './active-context.js';
+import { initShowcaseManager, openShowcaseManagerModal } from './showcase-manager.js';
 
 // Application State
 const state = {
@@ -31,6 +32,7 @@ async function init() {
     initTagManager();
     initViewManager();
     initActiveContext();
+    initShowcaseManager();
     
     // Set up event listeners
     setupEventListeners();
@@ -152,6 +154,11 @@ function setupEventListeners() {
       state.views = await viewsAPI.getAll();
       render();
     }, state.cards);
+  });
+  
+  // Showcases button
+  document.getElementById('showcasesBtn').addEventListener('click', () => {
+    openShowcaseManagerModal();
   });
   
   // Active Context button

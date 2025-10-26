@@ -137,6 +137,25 @@ export async function getCardById(id: string) {
   return result[0] || null;
 }
 
+export async function getCardByTitle(title: string) {
+  const result = await sql`
+    SELECT 
+      c.*,
+      COALESCE(
+        json_agg(
+          json_build_object('id', t.id, 'name', t.name, 'color', t.color)
+        ) FILTER (WHERE t.id IS NOT NULL),
+        '[]'
+      ) as tags
+    FROM content_cards c
+    LEFT JOIN card_tags ct ON c.id = ct.card_id
+    LEFT JOIN tags t ON ct.tag_id = t.id
+    WHERE LOWER(c.title) = LOWER(${title})
+    GROUP BY c.id
+  `;
+  return result[0] || null;
+}
+
 export async function createCard(data: {
   schema_id: string;
   schema_name: string;
@@ -144,16 +163,23 @@ export async function createCard(data: {
   content: string;
   tag_ids?: string[];
 }) {
+  // Extract title from data object
+  const title = (data.data as any).title;
+  if (!title || typeof title !== 'string' || title.trim() === '') {
+    throw new Error('Title is required in card data');
+  }
+
   const result = await sql`
     INSERT INTO content_cards (
-      schema_id, schema_name, user_id, data, content
+      schema_id, schema_name, user_id, data, content, title
     )
     VALUES (
       ${data.schema_id}, 
       ${data.schema_name}, 
       gen_random_uuid(), 
       ${JSON.stringify(data.data)}, 
-      ${data.content}
+      ${data.content},
+      ${title.trim()}
     )
     RETURNING *
   `;
@@ -179,14 +205,35 @@ export async function updateCard(id: string, data: {
   content?: string;
   tag_ids?: string[];
 }) {
+  // Extract title from data if provided
+  let title: string | undefined;
+  if (data.data) {
+    const extractedTitle = (data.data as any).title;
+    if (!extractedTitle || typeof extractedTitle !== 'string' || extractedTitle.trim() === '') {
+      throw new Error('Title is required in card data');
+    }
+    title = extractedTitle.trim();
+  }
+
   // Update card data
-  await sql`
-    UPDATE content_cards
-    SET data = ${data.data ? JSON.stringify(data.data) : sql`data`},
-        content = ${data.content !== undefined ? data.content : sql`content`},
-        updated_at = NOW()
-    WHERE id = ${id}
-  `;
+  if (title) {
+    await sql`
+      UPDATE content_cards
+      SET data = ${JSON.stringify(data.data)},
+          content = ${data.content !== undefined ? data.content : sql`content`},
+          title = ${title},
+          updated_at = NOW()
+      WHERE id = ${id}
+    `;
+  } else {
+    await sql`
+      UPDATE content_cards
+      SET data = ${data.data ? JSON.stringify(data.data) : sql`data`},
+          content = ${data.content !== undefined ? data.content : sql`content`},
+          updated_at = NOW()
+      WHERE id = ${id}
+    `;
+  }
 
   // Update tags if provided
   if (data.tag_ids !== undefined) {
@@ -204,6 +251,36 @@ export async function updateCard(id: string, data: {
   }
 
   return await getCardById(id);
+}
+
+export async function upsertCard(data: {
+  title: string;
+  schema_id: string;
+  schema_name: string;
+  data: object;
+  content: string;
+  tag_ids?: string[];
+}) {
+  // Check if card exists by title (case-insensitive)
+  const existing = await getCardByTitle(data.title);
+  
+  if (existing) {
+    // Update existing card
+    return await updateCard(existing.id, {
+      data: data.data,
+      content: data.content,
+      tag_ids: data.tag_ids
+    });
+  } else {
+    // Create new card
+    return await createCard({
+      schema_id: data.schema_id,
+      schema_name: data.schema_name,
+      data: data.data,
+      content: data.content,
+      tag_ids: data.tag_ids
+    });
+  }
 }
 
 export async function deleteCard(id: string) {
@@ -321,5 +398,133 @@ export async function updateView(id: string, data: {
 
 export async function deleteView(id: string) {
   await sql`DELETE FROM views WHERE id = ${id}`;
+  return true;
+}
+
+// ========== SHOWCASES ==========
+
+export async function getAllShowcases() {
+  return await sql`
+    SELECT * FROM showcases
+    ORDER BY created_at DESC
+  `;
+}
+
+export async function getShowcaseById(id: string) {
+  const result = await sql`
+    SELECT * FROM showcases
+    WHERE id = ${id}
+  `;
+  return result[0] || null;
+}
+
+export async function getShowcasesByCardId(cardId: string) {
+  return await sql`
+    SELECT s.* FROM showcases s
+    INNER JOIN showcase_cards sc ON s.id = sc.showcase_id
+    WHERE sc.card_id = ${cardId}
+  `;
+}
+
+export async function getShowcaseWithCards(id: string) {
+  const showcase = await getShowcaseById(id);
+  if (!showcase) return null;
+
+  // Get cards in order
+  const cardsResult = await sql`
+    SELECT 
+      c.*,
+      sc.position,
+      COALESCE(
+        json_agg(
+          json_build_object('id', t.id, 'name', t.name, 'color', t.color)
+        ) FILTER (WHERE t.id IS NOT NULL),
+        '[]'
+      ) as tags
+    FROM showcase_cards sc
+    INNER JOIN content_cards c ON sc.card_id = c.id
+    LEFT JOIN card_tags ct ON c.id = ct.card_id
+    LEFT JOIN tags t ON ct.tag_id = t.id
+    WHERE sc.showcase_id = ${id}
+    GROUP BY c.id, sc.position
+    ORDER BY sc.position ASC
+  `;
+
+  return {
+    ...showcase,
+    cards: cardsResult
+  };
+}
+
+export async function createShowcase(data: {
+  name: string;
+  description?: string;
+  card_ids: string[];
+  settings?: object;
+}) {
+  const result = await sql`
+    INSERT INTO showcases (name, description, user_id, settings)
+    VALUES (
+      ${data.name},
+      ${data.description || null},
+      gen_random_uuid(),
+      ${JSON.stringify(data.settings || { includeInfoOverlay: true })}
+    )
+    RETURNING *
+  `;
+
+  const showcase = result[0];
+
+  // Add card relationships with positions
+  for (let i = 0; i < data.card_ids.length; i++) {
+    await sql`
+      INSERT INTO showcase_cards (showcase_id, card_id, position)
+      VALUES (${showcase.id}, ${data.card_ids[i]}, ${i})
+    `;
+  }
+
+  return showcase;
+}
+
+export async function updateShowcase(id: string, data: {
+  name?: string;
+  description?: string;
+  card_ids?: string[];
+  settings?: object;
+  rendered_html?: string;
+}) {
+  // Update showcase fields
+  if (data.name !== undefined || data.description !== undefined || data.settings || data.rendered_html !== undefined) {
+    await sql`
+      UPDATE showcases
+      SET name = COALESCE(${data.name}, name),
+          description = COALESCE(${data.description !== undefined ? data.description : null}, description),
+          settings = COALESCE(${data.settings ? JSON.stringify(data.settings) : null}, settings),
+          rendered_html = COALESCE(${data.rendered_html !== undefined ? data.rendered_html : null}, rendered_html),
+          last_rendered_at = CASE WHEN ${data.rendered_html !== undefined} THEN NOW() ELSE last_rendered_at END,
+          updated_at = NOW()
+      WHERE id = ${id}
+    `;
+  }
+
+  // Update card relationships if provided
+  if (data.card_ids) {
+    // Remove existing relationships
+    await sql`DELETE FROM showcase_cards WHERE showcase_id = ${id}`;
+
+    // Add new relationships
+    for (let i = 0; i < data.card_ids.length; i++) {
+      await sql`
+        INSERT INTO showcase_cards (showcase_id, card_id, position)
+        VALUES (${id}, ${data.card_ids[i]}, ${i})
+      `;
+    }
+  }
+
+  return await getShowcaseById(id);
+}
+
+export async function deleteShowcase(id: string) {
+  await sql`DELETE FROM showcases WHERE id = ${id}`;
   return true;
 }
