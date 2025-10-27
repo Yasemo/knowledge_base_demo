@@ -165,14 +165,13 @@ export async function seedData() {
       
       // Insert the card
       const cardResult = await sql`
-        INSERT INTO content_cards (schema_id, schema_name, user_id, data, content, title)
+        INSERT INTO content_cards (schema_id, schema_name, user_id, data, content)
         VALUES (
           ${schemaId},
           ${card.schema_name},
           gen_random_uuid(),
           ${JSON.stringify(card.data)},
-          ${card.content},
-          ${card.data.title}
+          ${card.content}
         )
         RETURNING id
       `;

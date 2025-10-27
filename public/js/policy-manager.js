@@ -22,6 +22,7 @@ export async function openPolicyManager() {
   const policies = await fetchPolicies();
   const schemas = await fetchSchemas();
   const views = await fetchViews();
+  const tags = await fetchTags();
   
   const modalContent = `
     <div class="modal-header">
@@ -47,17 +48,17 @@ export async function openPolicyManager() {
   
   // Attach event listeners
   document.getElementById('createOutputPolicyBtn')?.addEventListener('click', () => {
-    openCreatePolicyModal('output', schemas, views);
+    openCreatePolicyModal('output', schemas, views, tags);
   });
   
   document.getElementById('createInputPolicyBtn')?.addEventListener('click', () => {
-    openCreatePolicyModal('input', schemas, views);
+    openCreatePolicyModal('input', schemas, views, tags);
   });
   
   // Attach copy and delete listeners for each policy
   policies.forEach(policy => {
     document.getElementById(`editBtn-${policy.id}`)?.addEventListener('click', () => {
-      openEditPolicyModal(policy, schemas, views);
+      openEditPolicyModal(policy, schemas, views, tags);
     });
     
     document.getElementById(`copyBtn-${policy.id}`)?.addEventListener('click', () => {
@@ -128,7 +129,7 @@ function renderPolicyCard(policy) {
   `;
 }
 
-function openCreatePolicyModal(policyType, schemas, views) {
+function openCreatePolicyModal(policyType, schemas, views, tags) {
   const modalContent = `
     <div class="modal-header">
       <h2>Create ${policyType === 'output' ? 'Output' : 'Input'} Policy</h2>
@@ -177,8 +178,15 @@ function openCreatePolicyModal(policyType, schemas, views) {
           
           <div class="form-group">
             <label>Auto-apply Tags (optional)</label>
-            <input type="text" id="policyTags" placeholder="Comma-separated tag IDs">
-            <p class="help-text">Cards sent via this policy will automatically get these tags</p>
+            <div class="checkbox-group">
+              ${tags.map(tag => `
+                <label class="checkbox-label">
+                  <input type="checkbox" name="tag_ids" value="${tag.id}">
+                  <span class="tag-badge" style="background-color: ${tag.color}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;">${tag.name}</span>
+                </label>
+              `).join('')}
+            </div>
+            ${tags.length === 0 ? '<p class="help-text">No tags available. Create tags first.</p>' : '<p class="help-text">Cards sent via this policy will automatically get these tags</p>'}
           </div>
         `}
         
@@ -246,10 +254,8 @@ async function createPolicy(policyType) {
     }
     data.schema_id = schemaId;
     
-    const tags = document.getElementById('policyTags').value;
-    if (tags) {
-      data.tag_ids = tags.split(',').map(t => t.trim()).filter(Boolean);
-    }
+    const checkboxes = document.querySelectorAll('input[name="tag_ids"]:checked');
+    data.tag_ids = Array.from(checkboxes).map(cb => cb.value);
   }
   
   try {
@@ -273,7 +279,7 @@ async function createPolicy(policyType) {
   }
 }
 
-function openEditPolicyModal(policy, schemas, views) {
+function openEditPolicyModal(policy, schemas, views, tags) {
   const policyType = policy.policy_type;
   
   const modalContent = `
@@ -320,7 +326,16 @@ function openEditPolicyModal(policy, schemas, views) {
           
           <div class="form-group">
             <label>Auto-apply Tags (optional)</label>
-            <input type="text" id="policyTags" value="${(policy.tag_ids || []).join(', ')}">
+            <div class="checkbox-group">
+              ${tags.map(tag => `
+                <label class="checkbox-label">
+                  <input type="checkbox" name="tag_ids" value="${tag.id}"
+                    ${policy.tag_ids && policy.tag_ids.includes(tag.id) ? 'checked' : ''}>
+                  <span class="tag-badge" style="background-color: ${tag.color}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;">${tag.name}</span>
+                </label>
+              `).join('')}
+            </div>
+            ${tags.length === 0 ? '<p class="help-text">No tags available.</p>' : ''}
           </div>
         `}
         
@@ -394,10 +409,8 @@ async function updatePolicy(policyId, policyType) {
     }
     data.schema_id = schemaId;
     
-    const tags = document.getElementById('policyTags').value;
-    if (tags) {
-      data.tag_ids = tags.split(',').map(t => t.trim()).filter(Boolean);
-    }
+    const checkboxes = document.querySelectorAll('input[name="tag_ids"]:checked');
+    data.tag_ids = Array.from(checkboxes).map(cb => cb.value);
   }
   
   try {
@@ -504,6 +517,16 @@ async function fetchViews() {
     return await response.json();
   } catch (err) {
     console.error('Failed to fetch views:', err);
+    return [];
+  }
+}
+
+async function fetchTags() {
+  try {
+    const response = await fetch('/api/tags');
+    return await response.json();
+  } catch (err) {
+    console.error('Failed to fetch tags:', err);
     return [];
   }
 }

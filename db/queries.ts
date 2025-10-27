@@ -1,5 +1,29 @@
 import { sql } from "./client.ts";
 
+// ========== UUID VALIDATION ==========
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUUID(value: string): boolean {
+  return UUID_REGEX.test(value);
+}
+
+function validateUUID(value: string | null | undefined, fieldName: string): void {
+  if (value && !isValidUUID(value)) {
+    throw new Error(`Invalid UUID format for ${fieldName}: "${value}"`);
+  }
+}
+
+function validateUUIDArray(values: string[] | null | undefined, fieldName: string): void {
+  if (!values) return;
+  
+  for (const value of values) {
+    if (!isValidUUID(value)) {
+      throw new Error(`Invalid UUID format in ${fieldName}: "${value}"`);
+    }
+  }
+}
+
 // ========== SCHEMAS ==========
 
 export async function getAllSchemas() {
@@ -144,11 +168,20 @@ export async function createCard(data: {
   content: string;
   tag_ids?: string[];
 }) {
+  // Extract title from data
+  const title = (data.data as any).title || '';
+  
+  console.log('\n📝 KB: Creating card with data:');
+  console.log('   - Title from data.title:', title);
+  console.log('   - Schema name:', data.schema_name);
+  console.log('   - Full data object:', JSON.stringify(data.data));
+  
   const result = await sql`
     INSERT INTO content_cards (
-      schema_id, schema_name, user_id, data, content
+      title, schema_id, schema_name, user_id, data, content
     )
     VALUES (
+      ${title},
       ${data.schema_id}, 
       ${data.schema_name}, 
       gen_random_uuid(), 
@@ -159,6 +192,7 @@ export async function createCard(data: {
   `;
 
   const card = result[0];
+  console.log('   ✅ Card created with title:', card.title, '\n');
 
   // Add tags if provided
   if (data.tag_ids && data.tag_ids.length > 0) {
@@ -367,6 +401,11 @@ export async function createPolicy(data: {
   duration_days?: number;
   refresh_schedule?: string;
 }) {
+  // Validate UUIDs
+  validateUUID(data.schema_id, 'schema_id');
+  validateUUIDArray(data.view_ids, 'view_ids');
+  validateUUIDArray(data.tag_ids, 'tag_ids');
+  
   const connectionString = generateConnectionString(data.username);
   const expiresAt = data.duration_days 
     ? new Date(Date.now() + data.duration_days * 24 * 60 * 60 * 1000)
