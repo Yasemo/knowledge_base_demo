@@ -5,6 +5,8 @@ import { initCardViewer, renderCards, showCardDetail } from './card-viewer.js';
 import { initTagManager, renderTagFilters, openTagModal } from './tag-manager.js';
 import { initViewManager, renderViews, openViewModal } from './view-manager.js';
 import { initActiveContext, openActiveContextModal } from './active-context.js';
+import { openPolicyManager } from './policy-manager.js';
+import { openChannelsManager } from './channels-manager.js';
 
 // Application State
 const state = {
@@ -152,6 +154,16 @@ function setupEventListeners() {
       state.views = await viewsAPI.getAll();
       render();
     }, state.cards);
+  });
+  
+  // New policy button
+  document.getElementById('newPolicyBtn').addEventListener('click', () => {
+    openPolicyManager();
+  });
+  
+  // Channels button
+  document.getElementById('channelsBtn')?.addEventListener('click', () => {
+    openChannelsManager();
   });
   
   // Active Context button
