@@ -1,4 +1,4 @@
-import { formatDate, extractExcerpt, renderMarkdown, createModal, closeModal, estimateTokenCount } from './utils.js';
+import { formatDate, extractExcerpt, renderMarkdown, initializeRenderedContent, createModal, closeModal, estimateTokenCount } from './utils.js';
 
 export function initCardViewer() {
   console.log('Card viewer initialized');
@@ -335,11 +335,11 @@ function renderCarouselView(cards, container) {
   let currentIndex = 0;
   let detailsExpanded = false;
   
-  function renderCurrentCard() {
+  async function renderCurrentCard() {
     const card = cards[currentIndex];
     const tags = card.tags || [];
     const data = card.data || {};
-    const renderedContent = renderMarkdown(card.content);
+    const renderedContent = await renderMarkdown(card.content);
     
     container.innerHTML = `
       <div class="carousel-view">
@@ -485,6 +485,12 @@ function renderCarouselView(cards, container) {
     // Remove old listener and add new one
     document.removeEventListener('keydown', handleKeyPress);
     document.addEventListener('keydown', handleKeyPress);
+    
+    // Initialize rendered content (for Mermaid, Chart.js, etc.)
+    const carouselCard = container.querySelector('.carousel-card');
+    if (carouselCard) {
+      await initializeRenderedContent(carouselCard);
+    }
   }
   
   renderCurrentCard();
@@ -504,12 +510,12 @@ function formatFieldValue(value) {
   return String(value);
 }
 
-export function showCardDetail(card) {
+export async function showCardDetail(card) {
   const tags = card.tags || [];
   const data = card.data || {};
   
   // Render markdown content
-  const renderedContent = renderMarkdown(card.content);
+  const renderedContent = await renderMarkdown(card.content);
   
   const content = `
     <div class="card-detail">
@@ -563,6 +569,12 @@ export function showCardDetail(card) {
   `;
   
   const modal = createModal(content, '', footer);
+  
+  // Initialize rendered content (for Mermaid, Chart.js, etc.)
+  const cardDetailContent = modal.querySelector('.card-detail-content');
+  if (cardDetailContent) {
+    await initializeRenderedContent(cardDetailContent);
+  }
   
   // Event listeners
   document.getElementById('closeDetailBtn').addEventListener('click', () => {

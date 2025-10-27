@@ -49,25 +49,11 @@ export async function runPendingMigrations() {
   
   try {
     // Import migration files
-    const migration001 = await import('./migrations/001_add_field_filters_to_views.ts');
+    const migration007 = await import('./migrations/007_add_title_column.ts');
     migrations.push({
-      name: '001_add_field_filters_to_views',
-      up: migration001.up,
-      down: migration001.down,
-    });
-    
-    const migration002 = await import('./migrations/002_add_more_schemas_and_cards.ts');
-    migrations.push({
-      name: '002_add_more_schemas_and_cards',
-      up: migration002.up,
-      down: migration002.down,
-    });
-    
-    const migration003 = await import('./migrations/003_add_many_more_cards.ts');
-    migrations.push({
-      name: '003_add_many_more_cards',
-      up: migration003.up,
-      down: migration003.down,
+      name: '007_add_title_column',
+      up: migration007.up,
+      down: migration007.down,
     });
   } catch (error) {
     console.log('  ℹ️  Error loading migrations:', error);

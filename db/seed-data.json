@@ -1,0 +1,265 @@
+{
+  "tags": [
+    { "name": "Frontend", "color": "#e91e63" },
+    { "name": "Backend", "color": "#9c27b0" },
+    { "name": "Database", "color": "#3f51b5" },
+    { "name": "Bug", "color": "#f44336" },
+    { "name": "Feature", "color": "#4caf50" },
+    { "name": "DevOps", "color": "#ff9800" },
+    { "name": "Documentation", "color": "#00bcd4" }
+  ],
+  "schemas": {
+    "Task": {
+      "name": "Task",
+      "description": "A structured task with priority, status, and assignee tracking",
+      "field_definitions": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "text",
+            "label": "Task Title",
+            "description": "Brief description of the task",
+            "required": true,
+            "max_length": 200,
+            "display_order": 1
+          },
+          {
+            "name": "priority",
+            "type": "select",
+            "label": "Priority Level",
+            "description": "Urgency of the task",
+            "required": true,
+            "options": [
+              { "value": "critical", "label": "Critical", "color": "#f44336" },
+              { "value": "high", "label": "High", "color": "#ff9800" },
+              { "value": "medium", "label": "Medium", "color": "#2196f3" },
+              { "value": "low", "label": "Low", "color": "#4caf50" }
+            ],
+            "default_value": "medium",
+            "display_order": 2
+          },
+          {
+            "name": "status",
+            "type": "select",
+            "label": "Status",
+            "description": "Current state of the task",
+            "required": true,
+            "options": [
+              { "value": "backlog", "label": "Backlog", "color": "#9e9e9e" },
+              { "value": "in_progress", "label": "In Progress", "color": "#2196f3" },
+              { "value": "review", "label": "In Review", "color": "#ff9800" },
+              { "value": "done", "label": "Done", "color": "#4caf50" },
+              { "value": "blocked", "label": "Blocked", "color": "#f44336" }
+            ],
+            "default_value": "backlog",
+            "display_order": 3
+          },
+          {
+            "name": "assignee",
+            "type": "text",
+            "label": "Assigned To",
+            "description": "Person responsible for this task",
+            "required": false,
+            "max_length": 100,
+            "display_order": 4
+          },
+          {
+            "name": "due_date",
+            "type": "date",
+            "label": "Due Date",
+            "description": "When this task should be completed",
+            "required": false,
+            "display_order": 5
+          },
+          {
+            "name": "content",
+            "type": "markdown",
+            "label": "Task Details",
+            "description": "Full description and details of the task",
+            "required": true,
+            "is_primary_content": true,
+            "display_order": 6
+          }
+        ]
+      }
+    },
+    "Note": {
+      "name": "Note",
+      "description": "Quick notes and ideas",
+      "field_definitions": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "text",
+            "label": "Note Title",
+            "description": "Title of the note",
+            "required": true,
+            "max_length": 150,
+            "display_order": 1
+          },
+          {
+            "name": "category",
+            "type": "select",
+            "label": "Category",
+            "description": "Note category",
+            "required": false,
+            "options": [
+              { "value": "personal", "label": "Personal", "color": "#4caf50" },
+              { "value": "work", "label": "Work", "color": "#2196f3" },
+              { "value": "idea", "label": "Idea", "color": "#ff9800" },
+              { "value": "research", "label": "Research", "color": "#9c27b0" }
+            ],
+            "display_order": 2
+          },
+          {
+            "name": "content",
+            "type": "markdown",
+            "label": "Note Content",
+            "description": "Your note in markdown",
+            "required": true,
+            "is_primary_content": true,
+            "display_order": 3
+          }
+        ]
+      }
+    },
+    "Article": {
+      "name": "Article",
+      "description": "Articles and blog posts",
+      "field_definitions": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "text",
+            "label": "Article Title",
+            "description": "Title of the article",
+            "required": true,
+            "max_length": 250,
+            "display_order": 1
+          },
+          {
+            "name": "author",
+            "type": "text",
+            "label": "Author",
+            "description": "Article author",
+            "required": false,
+            "max_length": 100,
+            "display_order": 2
+          },
+          {
+            "name": "published_date",
+            "type": "date",
+            "label": "Published Date",
+            "description": "When the article was published",
+            "required": false,
+            "display_order": 3
+          },
+          {
+            "name": "url",
+            "type": "url",
+            "label": "Source URL",
+            "description": "Link to original article",
+            "required": false,
+            "display_order": 4
+          },
+          {
+            "name": "content",
+            "type": "markdown",
+            "label": "Article Content",
+            "description": "Article summary or full content",
+            "required": true,
+            "is_primary_content": true,
+            "display_order": 5
+          }
+        ]
+      }
+    }
+  },
+  "cards": [
+    {
+      "schema_name": "Task",
+      "data": {
+        "title": "Deploy CI/CD Pipeline",
+        "priority": "high",
+        "status": "in_progress",
+        "assignee": "DevOps Team",
+        "due_date": "2024-03-15"
+      },
+      "content": "## Task Overview\n\nSet up a complete CI/CD pipeline for the knowledge base application with automated testing and deployment.\n\n## Deployment Workflow\n\n```mermaid\ngraph TD\n    A[Push to GitHub] --> B[Run Tests]\n    B --> C{Tests Pass?}\n    C -->|Yes| D[Build Docker Image]\n    C -->|No| E[Notify Team]\n    D --> F[Push to Registry]\n    F --> G[Deploy to Staging]\n    G --> H[Run E2E Tests]\n    H --> I{Tests Pass?}\n    I -->|Yes| J[Deploy to Production]\n    I -->|No| E\n    J --> K[Monitor Metrics]\n```\n\n## Deployment Frequency (Last 30 Days)\n\n```chart:bar\nWeek,Deployments,Rollbacks\nWeek 1,12,1\nWeek 2,15,0\nWeek 3,18,2\nWeek 4,14,0\n```\n\n## Key Requirements\n\n- Automated testing on every commit\n- Zero-downtime deployments\n- Automatic rollback on failure\n- Deployment notifications in Slack\n- Infrastructure as Code (Terraform)\n\n## Progress Checklist\n\n- [x] Set up GitHub Actions workflows\n- [x] Configure Docker build pipeline\n- [x] Set up staging environment\n- [ ] Implement blue-green deployment\n- [ ] Configure monitoring and alerts\n- [ ] Document deployment process",
+      "tags": ["DevOps", "Backend"]
+    },
+    {
+      "schema_name": "Task",
+      "data": {
+        "title": "Implement User Authentication",
+        "priority": "critical",
+        "status": "in_progress",
+        "assignee": "Security Team",
+        "due_date": "2024-03-01"
+      },
+      "content": "## Authentication System\n\nImplement secure user authentication with JWT tokens and refresh token rotation.\n\n## Authentication Flow\n\n```mermaid\nsequenceDiagram\n    participant User\n    participant Frontend\n    participant API\n    participant Database\n    \n    User->>Frontend: Enter credentials\n    Frontend->>API: POST /auth/login\n    API->>Database: Verify credentials\n    Database-->>API: User data\n    API->>API: Generate JWT + Refresh Token\n    API-->>Frontend: Tokens + User info\n    Frontend->>Frontend: Store tokens\n    Frontend-->>User: Redirect to dashboard\n    \n    Note over Frontend,API: Subsequent requests\n    Frontend->>API: Request with JWT\n    API->>API: Verify JWT\n    API-->>Frontend: Protected data\n```\n\n## Security Features\n\n- ✅ Password hashing with bcrypt\n- ✅ JWT access tokens (15min expiry)\n- ✅ Refresh token rotation\n- ✅ Rate limiting on login attempts\n- ⏳ Two-factor authentication (2FA)\n- ⏳ OAuth2 integration (Google, GitHub)\n\n## Implementation Guide\n\nFor detailed implementation, refer to the security documentation:\n\n```iframe:16:9\nhttps://www.youtube.com/embed/mbsmsi7l3r4\n```\n\n## Testing Requirements\n\n- Unit tests for all auth endpoints\n- Integration tests for token refresh flow\n- Security audit and penetration testing\n- Load testing (1000+ concurrent logins)",
+      "tags": ["Backend", "Feature"]
+    },
+    {
+      "schema_name": "Task",
+      "data": {
+        "title": "Optimize Database Queries",
+        "priority": "medium",
+        "status": "backlog",
+        "assignee": "Database Team",
+        "due_date": "2024-03-20"
+      },
+      "content": "## Performance Optimization Task\n\nAnalyze and optimize slow database queries to improve application response times.\n\n## Query Performance Metrics\n\n```chart:line\nMonth,Avg Response Time (ms),P95 Response Time (ms),P99 Response Time (ms)\nJan,45,120,250\nFeb,52,135,280\nMar,48,125,265\nApr,42,110,230\n```\n\n## Identified Issues\n\n### 1. Missing Indexes\n- `content_cards` table missing index on `schema_id`\n- `card_tags` junction table needs composite index\n- `views` table slow on tag_ids array lookups\n\n### 2. N+1 Query Problems\n- Card fetching loads tags in separate queries\n- Schema definitions fetched individually\n\n### 3. Unoptimized Joins\n- Showcase generation performs multiple sequential queries\n- View filtering could use materialized views\n\n## Proposed Solutions\n\n```sql\n-- Add missing indexes\nCREATE INDEX idx_cards_schema_id ON content_cards(schema_id);\nCREATE INDEX idx_card_tags_composite ON card_tags(card_id, tag_id);\nCREATE INDEX idx_views_tag_ids ON views USING GIN(tag_ids);\n\n-- Optimize card fetching with CTEs\nWITH card_tags AS (\n  SELECT card_id, json_agg(json_build_object('id', t.id, 'name', t.name)) as tags\n  FROM card_tags ct\n  JOIN tags t ON ct.tag_id = t.id\n  GROUP BY card_id\n)\nSELECT c.*, COALESCE(ct.tags, '[]') as tags\nFROM content_cards c\nLEFT JOIN card_tags ct ON c.id = ct.card_id;\n```\n\n## Expected Improvements\n\n- 40% reduction in average query time\n- 50% reduction in P95 latency\n- Reduced database CPU usage\n- Better scalability for concurrent users",
+      "tags": ["Database", "Backend"]
+    },
+    {
+      "schema_name": "Note",
+      "data": {
+        "title": "API Design Patterns",
+        "category": "research"
+      },
+      "content": "# API Design Patterns Research\n\nExploring modern API design patterns for our knowledge base system.\n\n## REST vs GraphQL vs gRPC\n\n```mermaid\ngraph LR\n    A[API Requirements] --> B{Data Complexity?}\n    B -->|Simple CRUD| C[REST]\n    B -->|Complex Queries| D[GraphQL]\n    B -->|High Performance| E[gRPC]\n    \n    C --> F[Easy to Cache]\n    D --> G[Flexible Queries]\n    E --> H[Fast & Efficient]\n```\n\n## Performance Comparison\n\n```chart:bar\nProtocol,Requests/Second,Latency (ms)\nREST,5000,25\nGraphQL,4200,30\ngRPC,8500,15\n```\n\n## Decision Matrix\n\n### REST (Current)\n**Pros:**\n- Simple and well-understood\n- Great caching support\n- Wide tooling ecosystem\n\n**Cons:**\n- Over-fetching/under-fetching\n- Multiple round trips for related data\n- Version management complexity\n\n### GraphQL\n**Pros:**\n- Flexible data fetching\n- Single endpoint\n- Strong typing\n\n**Cons:**\n- Caching complexity\n- Query complexity management\n- Learning curve\n\n### gRPC\n**Pros:**\n- High performance\n- Strong typing with Protocol Buffers\n- Bi-directional streaming\n\n**Cons:**\n- Limited browser support\n- Debugging difficulty\n- Steeper learning curve\n\n## Recommendation\n\nStick with REST for now, but consider GraphQL for complex data fetching scenarios in the future.",
+      "tags": ["Backend", "Documentation"]
+    },
+    {
+      "schema_name": "Note",
+      "data": {
+        "title": "Project Timeline and Milestones",
+        "category": "work"
+      },
+      "content": "# Q1 2024 Project Timeline\n\nTracking our major milestones and deliverables for the first quarter.\n\n## Gantt Chart\n\n```mermaid\ngantt\n    title Q1 2024 Development Roadmap\n    dateFormat  YYYY-MM-DD\n    section Authentication\n    JWT Implementation    :done, auth1, 2024-01-01, 2024-01-15\n    OAuth Integration     :active, auth2, 2024-01-16, 2024-02-01\n    2FA Setup            :auth3, 2024-02-02, 2024-02-15\n    \n    section Database\n    Schema Optimization   :done, db1, 2024-01-01, 2024-01-20\n    Query Performance     :active, db2, 2024-01-21, 2024-02-10\n    Replication Setup     :db3, 2024-02-11, 2024-03-01\n    \n    section Frontend\n    Component Library     :done, fe1, 2024-01-01, 2024-01-25\n    Responsive Design     :active, fe2, 2024-01-26, 2024-02-15\n    Accessibility         :fe3, 2024-02-16, 2024-03-05\n    \n    section DevOps\n    CI/CD Pipeline       :done, ops1, 2024-01-01, 2024-01-30\n    Monitoring Setup     :active, ops2, 2024-01-31, 2024-02-20\n    Auto-scaling         :ops3, 2024-02-21, 2024-03-15\n```\n\n## Resource Allocation\n\n```chart:pie\nTeam,Hours Allocated\nFrontend,320\nBackend,450\nDevOps,180\nQA,150\nDesign,100\n```\n\n## Key Dates\n\n- **Feb 1**: OAuth integration demo\n- **Feb 15**: Performance testing complete\n- **Mar 1**: Beta release\n- **Mar 15**: Production deployment\n\n## Risk Assessment\n\nHigh-risk areas requiring close monitoring:\n1. Database replication (complex setup)\n2. OAuth provider integration (external dependencies)\n3. Auto-scaling configuration (cost implications)",
+      "tags": ["DevOps", "Documentation"]
+    },
+    {
+      "schema_name": "Note",
+      "data": {
+        "title": "System Architecture Overview",
+        "category": "research"
+      },
+      "content": "# Knowledge Base System Architecture\n\nDocumenting the high-level architecture of our application.\n\n## Class Diagram\n\n```mermaid\nclassDiagram\n    class Schema {\n        +UUID id\n        +String name\n        +String description\n        +JSONB field_definitions\n        +DateTime created_at\n        +getAllSchemas()\n        +createSchema()\n    }\n    \n    class ContentCard {\n        +UUID id\n        +UUID schema_id\n        +String title\n        +JSONB data\n        +Text content\n        +DateTime created_at\n        +getAllCards()\n        +getCardByTitle()\n        +upsertCard()\n    }\n    \n    class Tag {\n        +UUID id\n        +String name\n        +String color\n        +getAllTags()\n        +createTag()\n    }\n    \n    class View {\n        +UUID id\n        +String name\n        +UUID schema_id\n        +UUID[] tag_ids\n        +JSONB field_filters\n        +getAllViews()\n        +createView()\n    }\n    \n    Schema \"1\" --> \"*\" ContentCard : defines\n    ContentCard \"*\" --> \"*\" Tag : tagged with\n    View \"*\" --> \"1\" Schema : filters\n    View \"*\" --> \"*\" Tag : filters by\n```\n\n## Component Distribution\n\n```chart:doughnut\nComponent,Lines of Code\nFrontend,3500\nBackend,2800\nDatabase,1200\nDevOps,600\nTests,1900\n```\n\n## Technology Stack\n\n### Frontend\n- Vanilla JavaScript (ES6+)\n- Marked.js for markdown\n- Mermaid.js for diagrams\n- Chart.js for visualizations\n\n### Backend\n- Deno runtime\n- PostgreSQL database\n- RESTful API design\n\n### DevOps\n- Docker containers\n- GitHub Actions CI/CD\n- Infrastructure as Code\n\n## Data Flow\n\n1. User creates content card\n2. Frontend validates and sends to API\n3. Backend processes and stores in PostgreSQL\n4. Content rendered with special blocks (mermaid, charts, iframes)\n5. Real-time updates pushed to connected clients",
+      "tags": ["Documentation", "Backend", "Frontend"]
+    },
+    {
+      "schema_name": "Article",
+      "data": {
+        "title": "Modern Web Development Best Practices",
+        "author": "Tech Weekly",
+        "published_date": "2024-01-15",
+        "url": "https://example.com/modern-web-dev"
+      },
+      "content": "# Modern Web Development Best Practices\n\nA comprehensive guide to building scalable, maintainable web applications in 2024.\n\n## Performance Metrics\n\n```chart:line\nYear,Average Load Time (s),Mobile Performance Score,Desktop Performance Score\n2020,3.2,65,78\n2021,2.8,72,85\n2022,2.3,80,90\n2023,1.8,88,95\n2024,1.5,92,97\n```\n\n## Core Web Vitals\n\nGoogle's Core Web Vitals have become essential metrics:\n\n### Largest Contentful Paint (LCP)\n- **Good**: < 2.5 seconds\n- **Needs Improvement**: 2.5 - 4.0 seconds\n- **Poor**: > 4.0 seconds\n\n### First Input Delay (FID)\n- **Good**: < 100 milliseconds\n- **Needs Improvement**: 100 - 300 milliseconds\n- **Poor**: > 300 milliseconds\n\n### Cumulative Layout Shift (CLS)\n- **Good**: < 0.1\n- **Needs Improvement**: 0.1 - 0.25\n- **Poor**: > 0.25\n\n## Video Tutorial\n\nWatch this comprehensive guide on modern web performance:\n\n```iframe:16:9\nhttps://www.youtube.com/embed/0fONene3OIA\n```\n\n## Best Practices Checklist\n\n✅ **Performance**\n- Lazy load images and components\n- Code splitting and tree shaking\n- Use CDN for static assets\n- Implement caching strategies\n- Minimize JavaScript bundle size\n\n✅ **Security**\n- Content Security Policy (CSP)\n- HTTPS everywhere\n- Input validation and sanitization\n- Regular dependency updates\n- Secure authentication\n\n✅ **Accessibility**\n- Semantic HTML\n- ARIA labels where needed\n- Keyboard navigation\n- Color contrast compliance\n- Screen reader testing\n\n✅ **SEO**\n- Meta tags and Open Graph\n- Semantic markup\n- XML sitemaps\n- Mobile-first design\n- Fast page speed\n\n## Framework Comparison\n\n```chart:bar\nFramework,GitHub Stars (k),NPM Downloads (M/week)\nReact,220,18.5\nVue,210,4.2\nAngular,95,3.1\nSvelte,75,0.8\n```\n\n## Conclusion\n\nModern web development requires balancing performance, security, accessibility, and developer experience. Focus on Core Web Vitals, follow established patterns, and continuously measure and improve your applications.",
+      "tags": ["Frontend", "Documentation"]
+    },
+    {
+      "schema_name": "Article",
+      "data": {
+        "title": "Database Scaling Strategies",
+        "author": "Database Monthly",
+        "published_date": "2024-01-22",
+        "url": "https://example.com/db-scaling"
+      },
+      "content": "# Database Scaling Strategies\n\nExploring different approaches to scale databases for high-traffic applications.\n\n## Scaling Approaches Decision Tree\n\n```mermaid\ngraph TD\n    A[Need to Scale?] --> B{Read or Write Heavy?}\n    B -->|Read Heavy| C[Read Replicas]\n    B -->|Write Heavy| D[Sharding]\n    B -->|Both| E[Hybrid Approach]\n    \n    C --> F[Master-Slave Replication]\n    D --> G{Sharding Strategy?}\n    G -->|Geographic| H[Geo-Sharding]\n    G -->|Hash-based| I[Hash Sharding]\n    G -->|Range-based| J[Range Sharding]\n    \n    E --> K[Replicas + Sharding]\n```\n\n## Growth Trends\n\n```chart:line\nQuarter,Data Size (TB),Query Volume (M/day),Active Users (M)\nQ1 2023,2.5,15,1.2\nQ2 2023,3.8,28,1.8\nQ3 2023,5.2,42,2.5\nQ4 2023,7.1,65,3.4\nQ1 2024,9.8,95,4.8\n```\n\n## Scaling Strategies\n\n### 1. Vertical Scaling (Scale Up)\n**Pros:**\n- Simple to implement\n- No application changes needed\n- Maintains data consistency\n\n**Cons:**\n- Hardware limits\n- Expensive at scale\n- Single point of failure\n\n### 2. Horizontal Scaling (Scale Out)\n**Pros:**\n- Near-infinite scalability\n- Better fault tolerance\n- Cost-effective\n\n**Cons:**\n- Application complexity\n- Data consistency challenges\n- Network overhead\n\n### 3. Read Replicas\n**Use Case:** Read-heavy workloads\n\n```sql\n-- Example: Route reads to replicas\nSELECT * FROM products WHERE category = 'electronics'\n-- Execute on replica\n\nINSERT INTO orders (user_id, product_id, quantity)\nVALUES (123, 456, 2)\n-- Execute on primary\n```\n\n### 4. Sharding\n**Use Case:** Write-heavy workloads\n\n**Sharding Strategies:**\n- **Geographic**: Shard by user location\n- **Hash-based**: Distribute evenly using hash function\n- **Range-based**: Partition by date or ID ranges\n\n## Cost Analysis\n\n```chart:bar\nStrategy,Monthly Cost ($),Complexity (1-10),Max Throughput (req/s)\nVertical Scaling,5000,2,10000\nRead Replicas,8000,4,50000\nSharding,15000,8,200000\nHybrid,25000,9,500000\n```\n\n## Implementation Roadmap\n\n1. **Phase 1: Optimization** (Weeks 1-2)\n   - Query optimization\n   - Index tuning\n   - Connection pooling\n\n2. **Phase 2: Read Replicas** (Weeks 3-4)\n   - Set up replication\n   - Update application routing\n   - Monitor lag and performance\n\n3. **Phase 3: Caching Layer** (Weeks 5-6)\n   - Implement Redis/Memcached\n   - Cache frequently accessed data\n   - Set TTL policies\n\n4. **Phase 4: Sharding** (Weeks 7-12)\n   - Design sharding strategy\n   - Migrate data gradually\n   - Update application logic\n\n## Interactive Demo\n\nExplore database sharding concepts:\n\n```iframe:4:3\nhttps://www.youtube.com/embed/5faMjKuB9bc\n```\n\n## Monitoring and Alerts\n\n**Key Metrics to Track:**\n- Query execution time (P50, P95, P99)\n- Replication lag\n- Connection pool usage\n- Disk I/O and CPU utilization\n- Cache hit ratio\n\n## Conclusion\n\nSuccessful database scaling requires:\n1. Understanding your workload patterns\n2. Choosing the right strategy for your use case\n3. Implementing gradually and monitoring closely\n4. Having rollback plans for each phase",
+      "tags": ["Database", "Backend", "DevOps"]
+    }
+  ]
+} 

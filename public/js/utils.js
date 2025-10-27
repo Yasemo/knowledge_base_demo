@@ -73,19 +73,38 @@ export function formatDate(dateString) {
   });
 }
 
-// Render markdown using marked.js
-export function renderMarkdown(content) {
+// Import the new content renderer
+import { contentRenderer } from './content-renderer.js';
+import { mermaidRenderer } from './renderers/mermaid-renderer.js';
+import { chartRenderer } from './renderers/chart-renderer.js';
+import { iframeRenderer } from './renderers/iframe-renderer.js';
+
+// Register plugins (only do this once)
+let renderersInitialized = false;
+function initializeRenderers() {
+  if (!renderersInitialized) {
+    contentRenderer.registerPlugin('mermaid', mermaidRenderer);
+    contentRenderer.registerPlugin('chart', chartRenderer);
+    contentRenderer.registerPlugin('iframe', iframeRenderer);
+    renderersInitialized = true;
+  }
+}
+
+// Render markdown using the new extensible renderer
+export async function renderMarkdown(content) {
   if (!content) return '';
   
-  // Configure marked
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-    headerIds: true,
-    mangle: false,
-  });
+  // Initialize renderers
+  initializeRenderers();
   
-  return marked.parse(content);
+  // Use the new content renderer
+  return await contentRenderer.render(content);
+}
+
+// Initialize rendered content (call after inserting HTML into DOM)
+export async function initializeRenderedContent(container) {
+  initializeRenderers();
+  await contentRenderer.initialize(container);
 }
 
 // Extract excerpt from markdown content
