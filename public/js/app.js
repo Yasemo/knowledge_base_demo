@@ -7,6 +7,7 @@ import { initViewManager, renderViews, openViewModal } from './view-manager.js';
 import { initActiveContext, openActiveContextModal } from './active-context.js';
 import { openPolicyManager } from './policy-manager.js';
 import { openChannelsManager } from './channels-manager.js';
+import { openShowcaseManager } from './showcase-manager.js';
 
 // Application State
 const state = {
@@ -159,6 +160,13 @@ function setupEventListeners() {
   // New policy button
   document.getElementById('newPolicyBtn').addEventListener('click', () => {
     openPolicyManager();
+  });
+  
+  // Showcases button
+  document.getElementById('showcasesBtn')?.addEventListener('click', async () => {
+    // Get all cards for showcase selection
+    const allCards = await cardsAPI.getAll();
+    openShowcaseManager(allCards);
   });
   
   // Channels button
