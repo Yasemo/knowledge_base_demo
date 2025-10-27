@@ -688,6 +688,138 @@ async function handleRequest(req: Request): Promise<Response> {
         });
       }
 
+      // ========== SHOWCASES ==========
+      if (pathname === "/api/showcases" && req.method === "GET") {
+        const showcases = await queries.getAllShowcases();
+        return new Response(JSON.stringify(showcases), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname === "/api/showcases" && req.method === "POST") {
+        const body = await parseJsonBody(req);
+        if (!body || !body.name || !body.card_ids || !Array.isArray(body.card_ids)) {
+          return new Response(
+            JSON.stringify({ error: "Missing required fields" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        // Create showcase
+        const showcase = await queries.createShowcase({
+          name: body.name,
+          description: body.description,
+          card_ids: body.card_ids,
+          settings: body.settings,
+        });
+        
+        // Generate HTML
+        const { generateShowcaseHTML } = await import("./db/showcase-generator.ts");
+        const serverUrl = `${url.protocol}//${url.host}`;
+        const html = await generateShowcaseHTML(showcase.id, serverUrl);
+        
+        // Update with rendered HTML
+        await queries.updateShowcase(showcase.id, { rendered_html: html });
+        
+        return new Response(JSON.stringify(showcase), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/showcases\/[^/]+\/with-cards$/) && req.method === "GET") {
+        const id = pathname.split("/")[3];
+        const showcase = await queries.getShowcaseWithCards(id);
+        if (!showcase) {
+          return new Response(JSON.stringify({ error: "Showcase not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify(showcase), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/showcases\/[^/]+$/) && req.method === "GET") {
+        const id = pathname.split("/").pop()!;
+        const showcase = await queries.getShowcaseById(id);
+        if (!showcase) {
+          return new Response(JSON.stringify({ error: "Showcase not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify(showcase), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/showcases\/[^/]+$/) && req.method === "PUT") {
+        const id = pathname.split("/").pop()!;
+        const body = await parseJsonBody(req);
+        if (!body) {
+          return new Response(
+            JSON.stringify({ error: "Invalid request body" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        // Update showcase
+        await queries.updateShowcase(id, {
+          name: body.name,
+          description: body.description,
+          card_ids: body.card_ids,
+          settings: body.settings,
+        });
+        
+        // Regenerate HTML
+        const { generateShowcaseHTML } = await import("./db/showcase-generator.ts");
+        const serverUrl = `${url.protocol}//${url.host}`;
+        const html = await generateShowcaseHTML(id, serverUrl);
+        
+        // Update with rendered HTML
+        const showcase = await queries.updateShowcase(id, { rendered_html: html });
+        
+        if (!showcase) {
+          return new Response(JSON.stringify({ error: "Showcase not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        return new Response(JSON.stringify(showcase), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/showcases\/[^/]+$/) && req.method === "DELETE") {
+        const id = pathname.split("/").pop()!;
+        await queries.deleteShowcase(id);
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pathname.match(/^\/api\/showcases\/[^/]+\/regenerate$/) && req.method === "POST") {
+        const id = pathname.split("/")[3];
+        const { generateShowcaseHTML } = await import("./db/showcase-generator.ts");
+        const serverUrl = `${url.protocol}//${url.host}`;
+        
+        const html = await generateShowcaseHTML(id, serverUrl);
+        const showcase = await queries.updateShowcase(id, { rendered_html: html });
+        
+        if (!showcase) {
+          return new Response(JSON.stringify({ error: "Showcase not found" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        return new Response(JSON.stringify({ success: true, showcase }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // API route not found
       return new Response(JSON.stringify({ error: "Not found" }), {
         status: 404,
