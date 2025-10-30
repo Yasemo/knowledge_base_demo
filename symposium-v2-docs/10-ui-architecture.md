@@ -2,119 +2,24 @@
 
 ## Overview
 
-Symposium v2 uses an **8-tab interface** for organizing all functionality.
+Symposium v2 uses a **7-tab interface** organized by workflow progression.
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│ Cards | Views | Schemas | Tags | Sources | Queries |     │
-│       | Outputs | Showcases | Integrations | Policies    │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ Integrations | Sources | Queries | Outputs | Cards | Views | │
+│ Showcases | Policies                                          │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+**Tab Order Philosophy**: Left to right follows data flow
+
+- **Setup** (Integrations) → **Collect** (Sources) → **Aggregate** (Queries) →
+  **Deliver** (Outputs) → **Manage** (Cards, Views) → **Share** (Showcases,
+  Policies)
 
 ## Tab Structure
 
-### 1. Cards Tab
-
-**Purpose**: Browse, create, and manage content cards
-
-**Layout**:
-
-```
-┌─────────────────┬──────────────────────────────────┐
-│ Views Sidebar   │  Card Display Area               │
-│ - All Cards     │                                  │
-│ - Recent        │  [Card Grid/List/Table/Carousel] │
-│ - Custom Views  │                                  │
-│ - + New View    │                                  │
-└─────────────────┴──────────────────────────────────┘
-```
-
-**Features**:
-
-- Switch between display modes
-- Quick filters
-- Search across cards
-- Bulk operations
-- Create new cards
-
-### 2. Views Tab
-
-**Purpose**: Create and manage filter configurations
-
-**Layout**:
-
-```
-┌─────────────────────────────────────────────────┐
-│ Views List                                      │
-│ ┌─────────────────────────────────────────┐   │
-│ │ High Priority Tasks              [Edit] │   │
-│ │ Schema: Task | Tags: project-a          │   │
-│ │ 12 cards                                │   │
-│ └─────────────────────────────────────────┘   │
-│                                                 │
-│ [+ New View]                                    │
-└─────────────────────────────────────────────────┘
-```
-
-**Features**:
-
-- Visual filter builder
-- Tag selector
-- Field filter editor
-- Preview results
-- Set default view
-
-### 3. Schemas Tab
-
-**Purpose**: Define card structures
-
-**Layout**:
-
-```
-┌─────────────────────────────────────────────────┐
-│ Schema List          │  Field Editor            │
-│ - Task (15 cards)    │  ┌──────────────────┐   │
-│ - Note (50 cards)    │  │ Field: Priority  │   │
-│ - Article (8 cards)  │  │ Type: Select     │   │
-│                      │  │ Required: Yes    │   │
-│ [+ New Schema]       │  └──────────────────┘   │
-└─────────────────────────────────────────────────┘
-```
-
-**Features**:
-
-- Drag-drop field reordering
-- Field type picker
-- Validation rules
-- Preview form
-- Card count per schema
-
-### 4. Tags Tab
-
-**Purpose**: Manage tag taxonomy
-
-**Layout**:
-
-```
-┌─────────────────────────────────────────────────┐
-│ Tags List                                       │
-│ 🔴 urgent (5 cards)                  [Edit]    │
-│ 🟢 project-alpha (23 cards)          [Edit]    │
-│ 🔵 automated (156 cards)             [Edit]    │
-│                                                 │
-│ [+ New Tag]                                     │
-└─────────────────────────────────────────────────┘
-```
-
-**Features**:
-
-- Color picker
-- Usage count
-- Bulk tag operations
-- Tag merging
-- Unused tag cleanup
-
-### 5. Integrations Tab
+### 1. Integrations Tab
 
 **Purpose**: Manage external service connections
 
@@ -139,7 +44,7 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - Usage statistics
 - Disable/enable
 
-### 6. Sources Tab
+### 2. Sources Tab
 
 **Purpose**: Configure automated data collection
 
@@ -166,7 +71,7 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - Execution history
 - Success/failure indicators
 
-### 7. Queries Tab
+### 3. Queries Tab
 
 **Purpose**: Configure multi-source aggregation
 
@@ -192,7 +97,7 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - Test query
 - View digest cards
 
-### 8. Outputs Tab
+### 4. Outputs Tab
 
 **Purpose**: Configure content delivery
 
@@ -218,7 +123,161 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - Delivery history
 - Recipients count
 
-### 9. Showcases Tab
+### 5. Cards Tab
+
+**Purpose**: Browse, create, and manage all content cards
+
+**Sub-Tab Structure**:
+
+```
+┌──────────────────────────────────────────────────┐
+│ Cards | Schemas | Tags                           │
+├──────────────────────────────────────────────────┤
+│ [Content varies by active sub-tab]              │
+└──────────────────────────────────────────────────┘
+```
+
+#### 5.1. Cards Sub-Tab (Default)
+
+**Layout**:
+
+```
+┌─────────────────┬──────────────────────────────────┐
+│ Quick Filters   │  Card Display Area               │
+│ - All Cards     │                                  │
+│ - Recent        │  [Card Grid/List/Table/Carousel] │
+│ - By Schema     │                                  │
+│ - By Tag        │  [+ New Card]                    │
+│ - Untagged      │                                  │
+└─────────────────┴──────────────────────────────────┘
+```
+
+**Features**:
+
+- Switch display modes (grid/list/table/carousel)
+- Quick filters and search
+- Bulk operations
+- Create new cards
+- View, edit, delete cards
+
+#### 5.2. Schemas Sub-Tab
+
+**Layout**:
+
+```
+┌─────────────────────────────────────────────────┐
+│ Schema List          │  Field Editor            │
+│ - Task (15 cards)    │  ┌──────────────────┐   │
+│ - Note (50 cards)    │  │ Field: Priority  │   │
+│ - Article (8 cards)  │  │ Type: Select     │   │
+│                      │  │ Required: Yes    │   │
+│ [+ New Schema]       │  └──────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+**Features**:
+
+- Create/edit/delete schemas
+- Drag-drop field reordering
+- Field type picker
+- Validation rules
+- Preview form
+- Card count per schema
+
+#### 5.3. Tags Sub-Tab
+
+**Layout**:
+
+```
+┌─────────────────────────────────────────────────┐
+│ Tags List                                       │
+│ 🔴 urgent (5 cards)                  [Edit]    │
+│ 🟢 project-alpha (23 cards)          [Edit]    │
+│ 🔵 automated (156 cards)             [Edit]    │
+│                                                 │
+│ [+ New Tag]                                     │
+└─────────────────────────────────────────────────┘
+```
+
+**Features**:
+
+- Create/edit/delete tags
+- Color picker
+- Usage count
+- Bulk tag operations
+- Tag merging
+- Unused tag cleanup
+
+### 6. Views Tab
+
+**Purpose**: View and manage cards through saved filter configurations
+
+**Dynamic Sub-Tab Structure**:
+
+```
+┌──────────────────────────────────────────────────┐
+│ All Cards | High Priority | Projects | +         │
+├──────────────────────────────────────────────────┤
+│ [Airtable-style table view of filtered cards]   │
+└──────────────────────────────────────────────────┘
+```
+
+**Main Layout**:
+
+```
+┌─────────────────────────────────────────────────┐
+│ View Tabs (dynamically generated)              │
+│ ┌─────┬──────────┬────────┬───────────┬───┐   │
+│ │ All │ Priority │ Active │ Completed │ + │   │
+│ └─────┴──────────┴────────┴───────────┴───┘   │
+│                                                 │
+│ Current View: "High Priority"                   │
+│ ┌─────────────────────────────────────────┐   │
+│ │ Airtable-Style Table                    │   │
+│ ├─────┬──────────┬──────────┬──────────┬──┤   │
+│ │ Sel │ Title    │ Priority │ Status   │…│   │
+│ ├─────┼──────────┼──────────┼──────────┼──┤   │
+│ │ ☐   │ Task A   │ High     │ Active   │…│   │
+│ │ ☐   │ Task B   │ High     │ Review   │…│   │
+│ │ ☐   │ Task C   │ High     │ Testing  │…│   │
+│ └─────┴──────────┴──────────┴──────────┴──┘   │
+│                                                 │
+│ [View Settings] [Export] [Share]                │
+└─────────────────────────────────────────────────┘
+```
+
+**Each View Tab Shows**:
+
+- Airtable-style table interface
+- Sortable columns
+- Filterable columns
+- Inline cell editing
+- Expandable rows for full content
+- Bulk selection and operations
+- Export options (CSV, JSON)
+- View settings (filters, sorts, display)
+
+**View Management**:
+
+- **+ Tab**: Creates new view
+- **Right-click tab**: Edit, duplicate, delete view
+- **Drag tabs**: Reorder views
+- **View settings**: Modify filters, sorts, columns
+
+**Features**:
+
+- Table view (primary): Airtable-style spreadsheet
+- Grid view (alternate): Card tiles
+- List view (alternate): Compact rows
+- Carousel view (alternate): Full card focus
+- Switch between view modes
+- Filter builder UI
+- Column show/hide
+- Group by field
+- Aggregate functions (count, sum, etc.)
+- Share view with team
+
+### 7. Showcases Tab
 
 **Purpose**: Create public card presentations
 
@@ -242,12 +301,13 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - View selector
 - Theme customization
 - Layout configuration
-- Public URL
+- Public URL management
 - Auto-regeneration
+- Preview before publishing
 
-### 10. Policies Tab
+### 8. Policies Tab
 
-**Purpose**: Manage external access control
+**Purpose**: Manage external API access control
 
 **Layout**:
 
@@ -257,7 +317,7 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 │ ┌─────────────────────────────────────────┐   │
 │ │ API Access Token                        │   │
 │ │ Type: Output | Views: 2 | Active        │   │
-│ │ Connection: abc123...                   │   │
+│ │ Connection: sym_abc123...               │   │
 │ │ [Copy] [Edit] [Revoke]                  │   │
 │ └─────────────────────────────────────────┘   │
 │ [+ New Policy]                                  │
@@ -272,6 +332,82 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - View usage logs
 - Revoke access
 
+## Views Tab - Airtable-Style Features
+
+### Table Interface
+
+**Column Operations**:
+
+- Click header to sort (asc/desc)
+- Drag columns to reorder
+- Resize column widths
+- Hide/show columns
+- Add calculated columns
+- Column types match field types
+
+**Row Operations**:
+
+- Click row to expand card details
+- Inline edit cells
+- Bulk select with checkboxes
+- Drag rows to reorder (if sort allows)
+- Right-click for context menu
+- Add new cards directly in table
+
+**Cell Editing**:
+
+- Text fields: Click to edit
+- Select fields: Dropdown picker
+- Date fields: Calendar picker
+- Tags: Multi-select dropdown
+- Numbers: Inline number input
+- Rich text: Opens modal editor
+
+**Filtering & Grouping**:
+
+```
+┌─────────────────────────────────────────────────┐
+│ [Filter] [Group] [Sort] [Hide Fields]          │
+│                                                 │
+│ Grouped by: Priority                            │
+│ ┌─ High (3 cards) ────────────────────────┐   │
+│ │ Task A | Active | John                   │   │
+│ │ Task B | Review | Sarah                  │   │
+│ │ Task C | Testing | Mike                  │   │
+│ └─────────────────────────────────────────┘   │
+│ ┌─ Medium (5 cards) ──────────────────────┐   │
+│ │ Task D | Active | Lisa                   │   │
+│ │ ...                                      │   │
+│ └─────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+### View Management Modal
+
+**Creating a New View**:
+
+```
+┌───────────────────────────────────────┐
+│ Create New View                       │
+├───────────────────────────────────────┤
+│ Name: [High Priority Tasks      ]    │
+│                                       │
+│ Filter:                               │
+│ ┌─────────────────────────────────┐  │
+│ │ Schema: Task                    │  │
+│ │ Priority: equals "high"         │  │
+│ │ Status: not "done"              │  │
+│ │ [+ Add Filter]                  │  │
+│ └─────────────────────────────────┘  │
+│                                       │
+│ Sort by: [created_at ▼] [DESC ▼]    │
+│                                       │
+│ Display: [Table ▼]                   │
+│                                       │
+│ [Cancel] [Create View]                │
+└───────────────────────────────────────┘
+```
+
 ## Common UI Patterns
 
 ### Modal Dialogs
@@ -279,41 +415,46 @@ Symposium v2 uses an **8-tab interface** for organizing all functionality.
 - Create/Edit forms
 - Confirmation dialogs
 - Multi-step wizards
+- Card detail views
 
 ### Side Panels
 
-- Card detail view
 - Quick filters
 - Properties panel
+- History/activity log
 
 ### Inline Editing
 
-- Table cells
+- Table cells (Views tab)
 - Field values
-- Quick updates
+- Quick updates without modal
 
 ### Drag & Drop
 
-- Reorder fields
-- Organize views
+- Reorder view tabs
+- Reorder table columns
+- Reorder schema fields
 - Reorder sources in queries
 
 ## Responsive Design
 
 ```
 Desktop (>1200px):
-  - Full tab bar
-  - Two-column layouts
+  - Full 8-tab bar
+  - Multi-column layouts
   - Side panels
+  - Full table view
 
 Tablet (768-1200px):
   - Full tab bar
   - Single column
   - Collapsible sidebars
+  - Horizontal scroll for tables
 
 Mobile (<768px):
   - Hamburger menu
   - Stack layouts
+  - Card view (not table)
   - Bottom sheets
 ```
 
@@ -322,63 +463,48 @@ Mobile (<768px):
 ```
 Application State:
   - Current user
-  - Active tab
-  - Selected view
-  - Filter state
+  - Active main tab
+  - Active sub-tab (Cards, Views)
+  - Active view in Views tab
 
 Entity State:
   - Cards (paginated)
-  - Views (cached)
+  - Views (list with metadata)
   - Schemas (cached)
   - Tags (cached)
+  - Sources/Queries/Outputs (lists)
 
 UI State:
   - Modal visibility
   - Panel collapse state
+  - Table column configuration
   - Form validation
   - Loading indicators
 ```
 
 ## Key Interactions
 
-### Creating a Card
-
-```
-1. Click "+ New Card" button
-2. Select schema
-3. Fill form fields
-4. Write markdown content
-5. Select tags
-6. Save
-```
-
-### Creating a Source
-
-```
-1. Navigate to Sources tab
-2. Click "+ New Source"
-3. Select integration
-4. Configure API params
-5. Select tags
-6. Set schedule (optional)
-7. Test execution
-8. Save
-```
-
-### Creating a View
+### Viewing Cards in Airtable Style
 
 ```
 1. Navigate to Views tab
-2. Click "+ New View"
-3. Select schemas
-4. Add tag filters
-5. Add field filters
-6. Set sort order
-7. Choose display mode
-8. Preview
-9. Save
+2. Select a view tab (or use All Cards)
+3. See cards in table format
+4. Click column headers to sort
+5. Click cells to edit inline
+6. Click row to expand full card
+7. Use filters to refine
 ```
 
----
+### Creating a New View
 
-**Next**: [Showcases](11-showcases.md)
+```
+1. Navigate to Views tab
+2. Click "+" tab
+3. Name the view
+4. Build filter:
+   - Select schemas
+   - Add tag filters
+   - Add field filters
+   - Set date range
+```
