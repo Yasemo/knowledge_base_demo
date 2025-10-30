@@ -9,7 +9,7 @@ export function initCardCreator() {
 export function openCardCreatorModal(schemas, tags, card = null, onSuccess) {
   const isEdit = !!card;
   const title = isEdit ? 'Edit Content Card' : 'Create New Content Card';
-  
+
   const content = `
     <form id="cardForm">
       <div class="form-group">
@@ -24,7 +24,29 @@ export function openCardCreatorModal(schemas, tags, card = null, onSuccess) {
         </select>
       </div>
       
+      <div class="form-group">
+        <label class="form-label" for="cardTitle">Title</label>
+        <span class="form-description">Optional title for this card</span>
+        <input 
+          type="text" 
+          id="cardTitle" 
+          class="form-input" 
+          placeholder="Enter a title (optional)..."
+          value="${isEdit && card ? card.data?.title || '' : ''}"
+        />
+      </div>
+      
       <div id="dynamicFields"></div>
+      
+      <div class="form-group">
+        <label class="form-label" for="cardContent">Content</label>
+        <span class="form-description">The main content of this card (supports Markdown)</span>
+        <textarea 
+          id="cardContent" 
+          class="form-textarea large"
+          placeholder="Enter the main content here..."
+        >${isEdit && card ? card.content || '' : ''}</textarea>
+      </div>
       
       <div class="form-group">
         <label class="form-label">Tags</label>
@@ -45,14 +67,14 @@ export function openCardCreatorModal(schemas, tags, card = null, onSuccess) {
       </div>
     </form>
   `;
-  
+
   const footer = `
     <button type="button" class="text-btn secondary" id="cancelBtn">Cancel</button>
     <button type="button" class="text-btn primary" id="saveCardBtn">${isEdit ? 'Update' : 'Create'} Card</button>
   `;
-  
+
   currentModal = createModal(content, title, footer);
-  
+
   // Set up schema change handler
   const schemaSelect = document.getElementById('cardSchema');
   schemaSelect.addEventListener('change', () => {
@@ -62,18 +84,18 @@ export function openCardCreatorModal(schemas, tags, card = null, onSuccess) {
       renderDynamicFields(schema, card);
     }
   });
-  
+
   // If editing, load the schema fields
   if (isEdit) {
     const schema = schemas.find(s => s.id === card.schema_id);
     renderDynamicFields(schema, card);
   }
-  
+
   // Set up event listeners
   document.getElementById('cancelBtn').addEventListener('click', () => {
     closeModal(currentModal);
   });
-  
+
   document.getElementById('saveCardBtn').addEventListener('click', async () => {
     await saveCard(schemas, card, onSuccess);
   });
@@ -82,22 +104,22 @@ export function openCardCreatorModal(schemas, tags, card = null, onSuccess) {
 function renderDynamicFields(schema, existingCard = null) {
   const container = document.getElementById('dynamicFields');
   container.innerHTML = '';
-  
+
   if (!schema || !schema.field_definitions || !schema.field_definitions.fields) {
     return;
   }
-  
+
   const fields = schema.field_definitions.fields;
   const cardData = existingCard ? existingCard.data : {};
   const cardContent = existingCard ? existingCard.content : '';
-  
+
   fields.forEach(field => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
-    
+
     let inputHTML = '';
     const value = cardData[field.name] || '';
-    
+
     switch (field.type) {
       case 'text':
       case 'email':
@@ -112,7 +134,7 @@ function renderDynamicFields(schema, existingCard = null) {
           />
         `;
         break;
-      
+
       case 'textarea':
         inputHTML = `
           <textarea 
@@ -122,7 +144,7 @@ function renderDynamicFields(schema, existingCard = null) {
           >${value}</textarea>
         `;
         break;
-      
+
       case 'markdown':
         // Markdown field uses the content column
         const markdownValue = field.is_primary_content ? cardContent : value;
@@ -135,7 +157,7 @@ function renderDynamicFields(schema, existingCard = null) {
           <span class="form-description">Use Markdown syntax for formatting</span>
         `;
         break;
-      
+
       case 'number':
         inputHTML = `
           <input 
@@ -147,7 +169,7 @@ function renderDynamicFields(schema, existingCard = null) {
           />
         `;
         break;
-      
+
       case 'date':
         inputHTML = `
           <input 
@@ -159,7 +181,7 @@ function renderDynamicFields(schema, existingCard = null) {
           />
         `;
         break;
-      
+
       case 'datetime':
         inputHTML = `
           <input 
@@ -171,7 +193,7 @@ function renderDynamicFields(schema, existingCard = null) {
           />
         `;
         break;
-      
+
       case 'select':
         inputHTML = `
           <select 
@@ -188,7 +210,7 @@ function renderDynamicFields(schema, existingCard = null) {
           </select>
         `;
         break;
-      
+
       case 'boolean':
         inputHTML = `
           <label style="font-size: 14px;">
@@ -202,7 +224,7 @@ function renderDynamicFields(schema, existingCard = null) {
           </label>
         `;
         break;
-      
+
       default:
         inputHTML = `
           <input 
@@ -213,11 +235,11 @@ function renderDynamicFields(schema, existingCard = null) {
           />
         `;
     }
-    
+
     if (field.type !== 'boolean') {
       formGroup.innerHTML = `
         <label class="form-label" for="field_${field.name}">
-          ${field.label}${field.required ? ' *' : ''}
+          ${field.label || field.name}${field.required ? ' *' : ''}
         </label>
         ${field.description ? `<span class="form-description">${field.description}</span>` : ''}
         ${inputHTML}
@@ -225,7 +247,7 @@ function renderDynamicFields(schema, existingCard = null) {
     } else {
       formGroup.innerHTML = inputHTML;
     }
-    
+
     container.appendChild(formGroup);
   });
 }
@@ -233,57 +255,58 @@ function renderDynamicFields(schema, existingCard = null) {
 async function saveCard(schemas, existingCard, onSuccess) {
   try {
     const schemaId = document.getElementById('cardSchema').value;
-    
+
     if (!schemaId) {
       showError('Please select a schema');
       return;
     }
-    
+
     const schema = schemas.find(s => s.id === schemaId);
     const fields = schema.field_definitions.fields;
-    
-    // Collect field values
+
+    // Get title from the permanent title field (optional)
+    const title = document.getElementById('cardTitle').value.trim();
+
+    // Get content from the permanent content field
+    const content = document.getElementById('cardContent').value.trim();
+
+    // Collect field values, starting with title if provided
     const data = {};
-    let content = '';
-    
+    if (title) {
+      data.title = title;
+    }
+
     for (const field of fields) {
       const element = document.getElementById(`field_${field.name}`);
-      
+
       if (!element) continue;
-      
+
       let value;
-      
+
       if (field.type === 'boolean') {
         value = element.checked;
       } else if (field.type === 'markdown' && field.is_primary_content) {
-        // Primary markdown content goes to the content column
-        content = element.value.trim();
-        continue; // Don't add to data object
+        // Legacy support: skip markdown fields that were marked as primary content
+        continue;
       } else {
         value = element.value.trim();
       }
-      
+
       // Validate required fields
       if (field.required && !value && value !== false) {
-        showError(`${field.label} is required`);
+        showError(`${field.label || field.name} is required`);
         return;
       }
-      
+
       if (value || value === false) {
         data[field.name] = value;
       }
     }
-    
-    // Ensure we have content
-    if (!content) {
-      showError('Content is required');
-      return;
-    }
-    
+
     // Collect selected tags
     const tagCheckboxes = document.querySelectorAll('input[name="tags"]:checked');
     const tag_ids = Array.from(tagCheckboxes).map(cb => cb.value);
-    
+
     const cardData = {
       schema_id: schemaId,
       schema_name: schema.name,
@@ -291,7 +314,16 @@ async function saveCard(schemas, existingCard, onSuccess) {
       content,
       tag_ids,
     };
-    
+
+    // Debug logging
+    console.log('📤 Client: Preparing to send card data');
+    console.log('   schema_id:', schemaId);
+    console.log('   schema_name:', schema.name);
+    console.log('   data:', data);
+    console.log('   content:', content);
+    console.log('   tag_ids:', tag_ids);
+    console.log('   Full cardData:', cardData);
+
     if (existingCard) {
       await cardsAPI.update(existingCard.id, cardData);
       showSuccess('Card updated successfully');
@@ -299,16 +331,10 @@ async function saveCard(schemas, existingCard, onSuccess) {
       await cardsAPI.create(cardData);
       showSuccess('Card created successfully');
     }
-    
+
     closeModal(currentModal);
     if (onSuccess) onSuccess();
   } catch (error) {
-    // Check for duplicate title error
-    if (error.message.includes('duplicate key') || error.message.includes('idx_content_cards_title_lower')) {
-      const titleValue = data.title || 'this title';
-      showError(`A card with the title "${titleValue}" already exists. Please use a different title.`);
-    } else {
-      showError(error.message);
-    }
+    showError(error.message);
   }
 }

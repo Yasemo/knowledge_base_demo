@@ -93,10 +93,10 @@ function initializeRenderers() {
 // Render markdown using the new extensible renderer
 export async function renderMarkdown(content) {
   if (!content) return '';
-  
+
   // Initialize renderers
   initializeRenderers();
-  
+
   // Use the new content renderer
   return await contentRenderer.render(content);
 }
@@ -110,7 +110,7 @@ export async function initializeRenderedContent(container) {
 // Extract excerpt from markdown content
 export function extractExcerpt(content, maxLength = 150) {
   if (!content) return '';
-  
+
   // Remove markdown syntax for excerpt
   let text = content
     .replace(/#{1,6}\s/g, '') // Remove headers
@@ -120,11 +120,11 @@ export function extractExcerpt(content, maxLength = 150) {
     .replace(/`(.+?)`/g, '$1') // Remove inline code
     .replace(/```[\s\S]+?```/g, '') // Remove code blocks
     .trim();
-  
+
   if (text.length > maxLength) {
     text = text.substring(0, maxLength) + '...';
   }
-  
+
   return text;
 }
 
@@ -133,28 +133,28 @@ export function extractExcerpt(content, maxLength = 150) {
 // Provides ~5-15% accuracy without external dependencies
 export function estimateTokenCount(text) {
   if (!text || typeof text !== 'string') return 0;
-  
+
   // Count words by splitting on whitespace
   const words = text.trim().split(/\s+/).filter(word => word.length > 0);
   const wordCount = words.length;
-  
+
   // Convert words to estimated tokens: tokens = words / 0.75
   const estimatedTokens = Math.ceil(wordCount / 0.75);
-  
+
   return estimatedTokens;
 }
 
 // Escape value for CSV format
 export function escapeCSV(value) {
   if (value === null || value === undefined) return '';
-  
+
   const str = String(value);
-  
+
   // If value contains comma, quote, or newline, wrap in quotes and escape quotes
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return '"' + str.replace(/"/g, '""') + '"';
   }
-  
+
   return str;
 }
 
@@ -164,7 +164,7 @@ export function exportCardsToCSV(cards, filename, includeContent = false) {
     showError('No cards to export');
     return;
   }
-  
+
   // Get all unique field names from all cards
   const allFields = new Set();
   cards.forEach(card => {
@@ -175,9 +175,9 @@ export function exportCardsToCSV(cards, filename, includeContent = false) {
       }
     });
   });
-  
+
   const fieldArray = Array.from(allFields).sort();
-  
+
   // Build CSV header
   const headers = [
     'Schema',
@@ -188,17 +188,17 @@ export function exportCardsToCSV(cards, filename, includeContent = false) {
     'Tags',
     ...fieldArray
   ];
-  
+
   if (includeContent) {
     headers.push('Content');
   }
-  
+
   // Build CSV rows
   const rows = cards.map(card => {
     const title = card.data?.title || card.data?.name || 'Untitled';
     const tags = card.tags ? card.tags.map(t => t.name).join('; ') : '';
     const tokenCount = estimateTokenCount(card.content || '');
-    
+
     const row = [
       escapeCSV(card.schema_name),
       escapeCSV(title),
@@ -207,7 +207,7 @@ export function exportCardsToCSV(cards, filename, includeContent = false) {
       escapeCSV(tokenCount),
       escapeCSV(tags)
     ];
-    
+
     // Add dynamic fields
     fieldArray.forEach(field => {
       const value = card.data?.[field];
@@ -217,33 +217,33 @@ export function exportCardsToCSV(cards, filename, includeContent = false) {
         row.push(escapeCSV(value));
       }
     });
-    
+
     // Add content if requested
     if (includeContent) {
       row.push(escapeCSV(card.content || ''));
     }
-    
+
     return row;
   });
-  
+
   // Combine header and rows
   const csvContent = [
     headers.join(','),
     ...rows.map(row => row.join(','))
   ].join('\n');
-  
+
   // Create blob and download
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   showSuccess(`Exported ${cards.length} cards to ${filename}`);
 }
 
@@ -261,29 +261,29 @@ export function showExportModal(cards, baseFilename, onExport) {
       </label>
     </div>
   `;
-  
+
   const footer = `
     <button type="button" class="text-btn secondary" id="cancelExportBtn">Cancel</button>
     <button type="button" class="text-btn primary" id="confirmExportBtn">Export CSV</button>
   `;
-  
+
   const modal = createModal(content, 'Export to CSV', footer);
-  
+
   // Event listeners
   document.getElementById('cancelExportBtn').addEventListener('click', () => {
     closeModal(modal);
   });
-  
+
   document.getElementById('confirmExportBtn').addEventListener('click', () => {
     const includeContent = document.getElementById('includeContentCheckbox').checked;
     closeModal(modal);
-    
+
     // Generate filename with date
     const date = new Date().toISOString().split('T')[0];
     const filename = `${baseFilename}-${date}.csv`;
-    
+
     exportCardsToCSV(cards, filename, includeContent);
-    
+
     if (onExport) onExport();
   });
 }
@@ -292,7 +292,7 @@ export function showExportModal(cards, baseFilename, onExport) {
 export function createModal(content, title, footer = null) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
-  
+
   overlay.innerHTML = `
     <div class="modal">
       <div class="modal-header">
@@ -305,18 +305,18 @@ export function createModal(content, title, footer = null) {
       ${footer ? `<div class="modal-footer">${footer}</div>` : ''}
     </div>
   `;
-  
+
   // Close on overlay click
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) {
       closeModal(overlay);
     }
   });
-  
+
   // Close on close button click
   const closeBtn = overlay.querySelector('.modal-close');
   closeBtn.addEventListener('click', () => closeModal(overlay));
-  
+
   // Close on Escape key
   const handleEscape = (e) => {
     if (e.key === 'Escape') {
@@ -325,9 +325,9 @@ export function createModal(content, title, footer = null) {
     }
   };
   document.addEventListener('keydown', handleEscape);
-  
+
   document.getElementById('modalContainer').appendChild(overlay);
-  
+
   return overlay;
 }
 
@@ -349,7 +349,7 @@ export function showSuccess(message) {
 // Generate random color for tags
 export function generateRandomColor() {
   const colors = [
-    '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', 
+    '#e91e63', '#9c27b0', '#3f51b5', '#2196f3',
     '#00bcd4', '#009688', '#4caf50', '#8bc34a',
     '#ff9800', '#ff5722', '#795548', '#607d8b'
   ];
@@ -360,7 +360,6 @@ export function generateRandomColor() {
 export const FIELD_TYPES = [
   { value: 'text', label: 'Text' },
   { value: 'textarea', label: 'Textarea' },
-  { value: 'markdown', label: 'Markdown' },
   { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
   { value: 'datetime', label: 'Date & Time' },
@@ -374,7 +373,7 @@ export const FIELD_TYPES = [
 // Collect all unique fields from schemas
 export function collectAllFields(schemas) {
   const fieldsMap = new Map();
-  
+
   schemas.forEach(schema => {
     const fields = schema.field_definitions?.fields || [];
     fields.forEach(field => {
@@ -382,7 +381,7 @@ export function collectAllFields(schemas) {
       if (field.type === 'markdown' || field.is_primary_content) {
         return;
       }
-      
+
       const key = field.name;
       if (!fieldsMap.has(key)) {
         fieldsMap.set(key, {
@@ -410,7 +409,7 @@ export function collectAllFields(schemas) {
       }
     });
   });
-  
+
   return Array.from(fieldsMap.values());
 }
 
@@ -419,7 +418,7 @@ export function matchesFieldFilter(cardValue, operator, filterValue) {
   if (cardValue === undefined || cardValue === null) {
     return operator === 'is_empty';
   }
-  
+
   switch (operator) {
     case 'equals':
       return String(cardValue).toLowerCase() === String(filterValue).toLowerCase();
